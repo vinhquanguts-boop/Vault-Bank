@@ -1,0 +1,117 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>VAULT Admin Control</title>
+    <link rel="stylesheet" href="styles.css?v=20260605-app-clarity" />
+  </head>
+  <body class="admin-page">
+    <header class="topbar">
+      <a class="brand" href="index.html"><img src="assets/logo2.png" alt="VAULT" /></a>
+      <nav class="nav-links">
+        <a href="index.html">Website</a>
+        <a href="app.html">App</a>
+      </nav>
+      <button class="button soft" id="refreshAdmin">Refresh</button>
+    </header>
+
+    <main class="admin-shell">
+      <section class="section intro">
+        <p class="eyebrow">Database control</p>
+        <h1>Vault admin panel</h1>
+        <p>Edit demo data, market settings and inspect live actions. Changes are saved to <code>data/vault-db.json</code>.</p>
+        <button class="button soft" id="resetDemoBtn" style="margin-top:14px">↺ Reset demo data</button>
+      </section>
+
+      <div class="admin-tabs">
+        <button class="active" data-admin-tab="overview">Overview</button>
+        <button data-admin-tab="budgets">Budgets</button>
+        <button data-admin-tab="metals">Metals</button>
+        <button data-admin-tab="splits">Splits</button>
+        <button data-admin-tab="goals">Goals</button>
+        <button data-admin-tab="cards">Cards</button>
+        <button data-admin-tab="actions">Action log</button>
+      </div>
+
+      <!-- Overview tab -->
+      <section class="admin-tab-panel active" id="adminTab-overview">
+        <div class="admin-grid">
+          <article class="panel">
+            <h2>Users</h2>
+            <div id="adminUsers"></div>
+          </article>
+          <article class="panel">
+            <h2>Market settings</h2>
+            <div id="adminSettings"></div>
+          </article>
+          <article class="panel wide-panel">
+            <h2>Recent transactions</h2>
+            <div class="list" id="adminTransactions"></div>
+          </article>
+        </div>
+      </section>
+
+      <!-- Budgets tab -->
+      <section class="admin-tab-panel hidden" id="adminTab-budgets">
+        <div class="panel">
+          <h2>Budgets</h2>
+          <div id="adminBudgets"></div>
+        </div>
+      </section>
+
+      <!-- Metals tab -->
+      <section class="admin-tab-panel hidden" id="adminTab-metals">
+        <div class="panel">
+          <h2>Metal holdings</h2>
+          <div id="adminMetals"></div>
+        </div>
+      </section>
+
+      <!-- Splits tab -->
+      <section class="admin-tab-panel hidden" id="adminTab-splits">
+        <div class="panel">
+          <h2>Split bills</h2>
+          <div id="adminSplits"></div>
+        </div>
+      </section>
+
+      <!-- Goals tab -->
+      <section class="admin-tab-panel hidden" id="adminTab-goals">
+        <div class="panel">
+          <h2>Savings goals</h2>
+          <div id="adminGoals"></div>
+        </div>
+      </section>
+
+      <!-- Cards tab -->
+      <section class="admin-tab-panel hidden" id="adminTab-cards">
+        <div class="panel">
+          <h2>Card controls</h2>
+          <div id="adminCards"></div>
+        </div>
+      </section>
+
+      <!-- Action log tab -->
+      <section class="admin-tab-panel hidden" id="adminTab-actions">
+        <div class="panel">
+          <h2>Action log</h2>
+          <div class="admin-log-filters">
+            <button class="active" data-log-filter="all">All</button>
+            <button data-log-filter="login">Login</button>
+            <button data-log-filter="metals">Metals</button>
+            <button data-log-filter="transfer">Transfer</button>
+            <button data-log-filter="savings">Savings</button>
+            <button data-log-filter="split">Splits</button>
+            <button data-log-filter="card">Card</button>
+            <button data-log-filter="admin">Admin</button>
+          </div>
+          <div class="list" id="adminActions"></div>
+        </div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="status"></div>
+    <script src="admin.js"></script>
+  </body>
+</html>

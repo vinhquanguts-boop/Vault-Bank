@@ -1,0 +1,868 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>VAULT Bank</title>
+    <link rel="stylesheet" href="styles.css?v=20260605-app-clarity" />
+  </head>
+  <body class="site-shell">
+    <div class="vault-intro" data-vault-intro>
+
+      <!-- ① Corridor tunnel - 4 concentric frames + warm interior vault light -->
+      <span class="vi-corridor" aria-hidden="true">
+        <span class="vi-frame vi-f1"></span>
+        <span class="vi-frame vi-f2"></span>
+        <span class="vi-frame vi-f3"></span>
+        <span class="vi-frame vi-f4"></span>
+        <span class="vi-ray vi-ray-tl"></span>
+        <span class="vi-ray vi-ray-tr"></span>
+        <span class="vi-ray vi-ray-bl"></span>
+        <span class="vi-ray vi-ray-br"></span>
+        <!-- Warm amber glow from deep inside the vault -->
+        <span class="vi-vault-light" aria-hidden="true"></span>
+      </span>
+
+      <!-- ② Vault door panels - dial on left, lever handle on right -->
+      <span class="vault-door vault-door-left" aria-hidden="true">
+        <!-- Raised inset panel - structural detail on door face -->
+        <span class="door-panel-inset" aria-hidden="true"></span>
+        <!-- Combination dial mounted on this door face (moves with door on open) -->
+        <span class="vault-dial-wrap">
+          <span class="vault-dial">
+            <span class="dial-spoke dial-spoke-0"></span>
+            <span class="dial-spoke dial-spoke-1"></span>
+            <span class="dial-spoke dial-spoke-2"></span>
+            <span class="dial-spoke dial-spoke-3"></span>
+            <span class="dial-hub"></span>
+            <span class="dial-handle"></span>
+          </span>
+          <!-- Stationary indicator arrow - does not spin with dial -->
+          <span class="dial-indicator" aria-hidden="true"></span>
+        </span>
+      </span>
+      <span class="vault-door vault-door-right" aria-hidden="true">
+        <!-- Raised inset panel - structural detail on door face -->
+        <span class="door-panel-inset" aria-hidden="true"></span>
+        <!-- Lever handle on right door (moves with door on open) -->
+        <span class="vault-door-handle" aria-hidden="true"></span>
+      </span>
+
+      <!-- ② b  Horizontal locking bolt bars that cross the seam -->
+      <span class="vault-door-bolts" aria-hidden="true">
+        <span class="vdb vdb-1"></span>
+        <span class="vdb vdb-2"></span>
+        <span class="vdb vdb-3"></span>
+      </span>
+
+      <!-- ③ Centre seam + decorative seam rivets -->
+      <span class="vault-seam"                   aria-hidden="true"></span>
+      <span class="vault-bolt vault-bolt-top"    aria-hidden="true"></span>
+      <span class="vault-bolt vault-bolt-bottom" aria-hidden="true"></span>
+
+      <!-- ④ Walk-through light burst (fires on opening) -->
+      <span class="vi-burst" aria-hidden="true"></span>
+
+      <!-- ⑤ Floating dust motes - atmospheric depth -->
+      <span class="vi-dust" aria-hidden="true">
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      </span>
+
+      <!-- ⑥ Trigger -->
+      <button class="vault-intro-logo" type="button" aria-label="Enter VAULT">
+        <img src="assets/logo2.png" alt="VAULT" />
+        <span>Enter VAULT</span>
+      </button>
+
+    </div>
+
+    <header class="topbar">
+      <a class="brand" href="index.html" aria-label="Vault Bank home">
+        <img src="assets/vault_logo_with_applied_coin.png" alt="" />
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="#banking">Banking</a>
+        <a href="#features">Features</a>
+        <a href="#card">Card</a>
+        <a href="#invest">Invest</a>
+        <a href="#partners">Partners</a>
+        <a href="#connect">Advisor</a>
+        <a href="#database">Data</a>
+        <a href="admin.html">Admin</a>
+      </nav>
+      <a class="button ghost" href="app.html">Open app</a>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Premium personal banking</p>
+          <h1>VAULT Bank</h1>
+          <p class="lead">A calmer way to spend, save, split and grow your money in one rose gold banking experience.</p>
+          <div class="hero-actions">
+            <a class="button primary" href="app.html">Try demo app</a>
+            <button class="button soft" data-modal="tour">Take the Tour →</button>
+          </div>
+          <div class="proof-row">
+            <span>Live budgets</span>
+            <span>Card control</span>
+            <span>Gold and silver</span>
+          </div>
+        </div>
+        <div class="phone-stage" aria-label="Vault app preview">
+          <div class="phone">
+            <div class="notch"></div>
+            <div class="phone-hero">
+              <div class="status-row"><span>22:22</span><span>5G 82%</span></div>
+              <p>Good evening,</p>
+              <h2>Sarah</h2>
+              <span class="micro">TOTAL BALANCE</span>
+              <strong class="balance">$16,032.05</strong>
+              <div class="stat-grid">
+                <span><b>$8686</b>Income</span>
+                <span><b>$4000</b>Spent</span>
+                <span><b>$850</b>Saved</span>
+              </div>
+            </div>
+            <div class="phone-body">
+              <div class="digest-card">
+                <b>Weekly digest ready</b>
+                <span>Score: 78 · You're on track this month</span>
+              </div>
+              <div class="mini-row">
+                <span><b>$2440</b>Flexible savings</span>
+                <span><b>$5512</b>Fixed savings</span>
+              </div>
+              <div class="transaction-card">
+                <span>Salary March <b>+$8,888.00</b></span>
+                <span>Woolworths <b>$87.54</b></span>
+                <span>BBQ <b>$234.00</b></span>
+              </div>
+            </div>
+          </div>
+          <img class="floating-card" src="assets/vault_card_front.png" alt="Vault debit card" />
+        </div>
+      </section>
+
+      <section class="section intro" id="banking">
+        <p class="eyebrow">Introduce Vault</p>
+        <h2>Banking that feels organized before you even tap.</h2>
+        <p>Vault brings everyday money, smart budgets, savings goals, split bills, debit card controls and precious metal holdings into one clean dashboard.</p>
+        <button class="button soft modal-trigger-btn" data-modal="banking" style="margin-top:28px">How Vault works →</button>
+      </section>
+
+      <section class="feature-grid" id="features">
+        <article data-room="01" data-modal="spend" role="button" tabindex="0" aria-label="Open Spend Smarter details">
+          <span class="feature-icon">ROOM 01</span>
+          <h3>Spend smarter</h3>
+          <p>Budget cards show progress, warnings and category details without turning your money into noise.</p>
+          <span class="feature-explore" aria-hidden="true">Explore →</span>
+        </article>
+        <article data-room="02" data-modal="save" role="button" tabindex="0" aria-label="Open Save Calmer details">
+          <span class="feature-icon">ROOM 02</span>
+          <h3>Save calmer</h3>
+          <p>Flexible and fixed savings accounts track goals, balances and progress in the same visual language.</p>
+          <span class="feature-explore" aria-hidden="true">Explore →</span>
+        </article>
+        <article data-room="03" data-modal="metals" role="button" tabindex="0" aria-label="Open Grow With Metals details">
+          <span class="feature-icon">ROOM 03</span>
+          <h3>Grow with metals</h3>
+          <p>Gold and silver holdings sit beside live AUD pricing, fee estimates and auto accumulate goals.</p>
+          <span class="feature-explore" aria-hidden="true">Explore →</span>
+        </article>
+        <article data-room="04" data-modal="split" role="button" tabindex="0" aria-label="Open Split Bills details">
+          <span class="feature-icon">ROOM 04</span>
+          <h3>Split without friction</h3>
+          <p>Create bill splits, send reminders and settle what you owe with transaction history kept tidy.</p>
+          <span class="feature-explore" aria-hidden="true">Explore →</span>
+        </article>
+      </section>
+
+      <!-- Stats strip - data preserved from demo database -->
+      <section class="stats-strip" aria-label="Key Vault statistics">
+        <div class="stats-strip-inner">
+          <div class="stat-block">
+            <strong>8.5%</strong>
+            <span>Fixed savings rate p.a.</span>
+          </div>
+          <div class="stat-divider" aria-hidden="true"></div>
+          <div class="stat-block">
+            <strong>$50</strong>
+            <span>Gold from</span>
+          </div>
+          <div class="stat-divider" aria-hidden="true"></div>
+          <div class="stat-block">
+            <strong>$0</strong>
+            <span>Monthly account fees</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="card-section" id="card">
+        <div class="card-showcase" aria-label="Vault card front and back">
+          <img class="card-showcase-front" src="assets/vault_card_front.png" alt="Vault physical card front" />
+          <img class="card-showcase-back" src="assets/vault_card_back.png" alt="Vault physical card back" />
+        </div>
+        <div>
+          <p class="eyebrow">Rose gold Visa Debit</p>
+          <h2>Your card, fully controlled.</h2>
+          <p>Freeze or unfreeze the card, reveal PIN and CVV, review limits and inspect card activity inside the app.</p>
+          <a class="button primary" href="app.html#card" data-modal="card" data-modal-href="app.html#card">Manage card demo</a>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════════════
+           SECTION 06 - INVESTMENT METHODS  (Phase 1)
+           Position: after card-section, before partners-section
+        ══════════════════════════════════════════════════════════════ -->
+      <section class="invest-section" id="invest">
+        <div class="invest-inner">
+
+          <div class="invest-header">
+            <p class="eyebrow">HOW YOUR MONEY GROWS</p>
+            <h2>Four ways to build wealth inside Vault</h2>
+            <p class="invest-lead">Most Australians earn 2.1% from their bank. Vault gives you a choice from same day flexible savings to government backed precious metals, all in one app.</p>
+          </div>
+
+          <!-- Four method cards -->
+          <div class="method-grid">
+
+            <article class="method-card" data-method="flexible">
+              <span class="method-icon-wrap" aria-hidden="true">
+                <svg class="method-icon-svg" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="18" cy="18" r="12" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M14 18c0-2.2 1.8-4 4-4s4 1.8 4 4-1.8 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  <path d="M18 8v2M18 26v2M8 18h2M26 18h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+              </span>
+              <h3 class="method-name">Flexible Savings</h3>
+              <strong class="method-rate">6.5%</strong>
+              <em class="method-sub">per annum</em>
+              <p class="method-note">No lock in · Withdraw anytime</p>
+              <span class="risk-pill risk-low">Low risk</span>
+            </article>
+
+            <article class="method-card method-card--featured" data-method="fixed">
+              <span class="method-best-badge">Highest return</span>
+              <span class="method-icon-wrap" aria-hidden="true">
+                <svg class="method-icon-svg" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="9" y="17" width="18" height="13" rx="3" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M13 17v-4a5 5 0 0110 0v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  <circle cx="18" cy="23" r="1.8" fill="currentColor"/>
+                </svg>
+              </span>
+              <h3 class="method-name">Fixed 12 Month</h3>
+              <strong class="method-rate">8.5%</strong>
+              <em class="method-sub">per annum</em>
+              <p class="method-note">Highest return · 12 month term</p>
+              <span class="risk-pill risk-low">Low risk</span>
+            </article>
+
+            <article class="method-card" data-method="metals">
+              <span class="method-icon-wrap" aria-hidden="true">
+                <svg class="method-icon-svg" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="6" y="14" width="24" height="12" rx="3" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M10 14v-2a2 2 0 012-2h12a2 2 0 012 2v2" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M10 20h16" stroke="currentColor" stroke-width="1" stroke-opacity="0.45"/>
+                </svg>
+              </span>
+              <h3 class="method-name">Gold &amp; Silver</h3>
+              <strong class="method-rate">From $50</strong>
+              <em class="method-sub">AUD minimum</em>
+              <p class="method-note">Perth Mint custody · Real asset</p>
+              <span class="risk-pill risk-med">Low–Med risk</span>
+            </article>
+
+            <article class="method-card" data-method="auto">
+              <span class="method-icon-wrap" aria-hidden="true">
+                <svg class="method-icon-svg" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M8 18A10 10 0 0118 8c3.3 0 6.2 1.6 8 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  <path d="M28 18A10 10 0 0118 28c-3.3 0-6.2-1.6-8-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  <path d="M24 8l2.5 4-4.5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M12 28l-2.5-4 4.5-.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              <h3 class="method-name">AutoAccumulate</h3>
+              <strong class="method-rate">Weekly</strong>
+              <em class="method-sub">or monthly</em>
+              <p class="method-note">Dollar-cost averaging · Set once</p>
+              <span class="risk-pill risk-auto">Flexible</span>
+            </article>
+
+          </div><!-- /method-grid -->
+
+          <!-- 8.5% vs 2.1% callout block -->
+          <div class="rate-callout">
+            <div class="rate-callout-rates">
+              <div class="rate-item">
+                <span class="rate-label">Your bank gives you</span>
+                <strong class="rate-num rate-num--low">2.1%</strong>
+              </div>
+              <span class="rate-vs" aria-hidden="true">vs</span>
+              <div class="rate-item">
+                <span class="rate-label">Vault's best rate</span>
+                <strong class="rate-num rate-num--high">8.5%</strong>
+              </div>
+            </div>
+            <p class="rate-callout-copy">"Your bank gives you 2.1%. Vault gives you a choice. Start with $50 in gold, $100 in high yield savings, or both from the same app."</p>
+          </div>
+
+          <!-- Full-width comparison table -->
+          <div class="invest-table-wrap">
+            <table class="invest-table">
+              <thead>
+                <tr>
+                  <th>Method</th>
+                  <th>Minimum</th>
+                  <th>Return / Growth</th>
+                  <th>Risk level</th>
+                  <th>Lock-in</th>
+                  <th>Regulation</th>
+                  <th>Best for</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Flexible Savings</strong></td>
+                  <td>$1</td>
+                  <td>6.5% p.a.</td>
+                  <td><span class="risk-badge risk-badge--low">Low</span></td>
+                  <td><span class="lock-open">None</span></td>
+                  <td>APRA / ADI</td>
+                  <td>Emergency fund, short-term goals</td>
+                </tr>
+                <tr>
+                  <td><strong>Fixed 12 Month</strong></td>
+                  <td>$100</td>
+                  <td>8.5% p.a.</td>
+                  <td><span class="risk-badge risk-badge--low">Low</span></td>
+                  <td><span class="lock-closed">12 months</span></td>
+                  <td>APRA / ADI</td>
+                  <td>Medium-term savings, house deposit</td>
+                </tr>
+                <tr>
+                  <td><strong>Gold</strong></td>
+                  <td>$50</td>
+                  <td>Market-linked</td>
+                  <td><span class="risk-badge risk-badge--med">Low–Med</span></td>
+                  <td><span class="lock-open">None</span></td>
+                  <td>Perth Mint</td>
+                  <td>Inflation hedge, long-term wealth</td>
+                </tr>
+                <tr>
+                  <td><strong>Silver</strong></td>
+                  <td>$20</td>
+                  <td>Market-linked</td>
+                  <td><span class="risk-badge risk-badge--med">Medium</span></td>
+                  <td><span class="lock-open">None</span></td>
+                  <td>Perth Mint</td>
+                  <td>Portfolio diversification</td>
+                </tr>
+                <tr>
+                  <td><strong>AutoAccumulate</strong></td>
+                  <td>$10/week</td>
+                  <td>Varies by method</td>
+                  <td><span class="risk-badge risk-badge--auto">As per method</span></td>
+                  <td><span class="lock-open">As per method</span></td>
+                  <td>As per method</td>
+                  <td>Habit-forming, DCA strategy</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- CTA bar -->
+          <div class="invest-cta-bar">
+            <a class="button primary" href="app.html">Open a Vault account - try any method from day one</a>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════════════
+           SECTION 07 - PARTNERS & REGULATORY  (Phase 1)
+        ══════════════════════════════════════════════════════════════ -->
+      <section class="partners-section" id="partners">
+        <div class="partners-inner">
+
+          <div class="partners-header">
+            <p class="eyebrow">BUILT ON TRUSTED FOUNDATIONS</p>
+            <h2>Every dollar. Every gram. Properly protected.</h2>
+            <p class="partners-lead">The biggest barrier to fintech adoption is trust. Vault names every institution that stands behind your money - because you deserve to know who's holding it.</p>
+          </div>
+
+          <!-- Logo strip -->
+          <div class="partner-logo-strip" aria-label="Partner institutions">
+            <span class="partner-logo-item" role="button" tabindex="0">Perth Mint</span>
+            <span class="partner-logo-divider" aria-hidden="true"></span>
+            <span class="partner-logo-item" role="button" tabindex="0">Visa</span>
+            <span class="partner-logo-divider" aria-hidden="true"></span>
+            <span class="partner-logo-item" role="button" tabindex="0">APRA</span>
+            <span class="partner-logo-divider" aria-hidden="true"></span>
+            <span class="partner-logo-item" role="button" tabindex="0">ASIC</span>
+            <span class="partner-logo-divider" aria-hidden="true"></span>
+            <span class="partner-logo-item" role="button" tabindex="0">CDR</span>
+            <span class="partner-logo-divider" aria-hidden="true"></span>
+            <span class="partner-logo-item" role="button" tabindex="0">AUSTRAC</span>
+          </div>
+
+          <!-- Three core partner cards -->
+          <div class="partner-cards">
+
+            <article class="partner-card" tabindex="0">
+              <div class="partner-card-head">
+                <span class="partner-card-icon" aria-hidden="true">
+                  <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="24" cy="24" r="16" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M24 16v16M18 20l6-4 6 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="24" cy="24" r="3" fill="currentColor"/>
+                  </svg>
+                </span>
+                <div>
+                  <p class="partner-card-tag">Precious metals custody</p>
+                  <h3 class="partner-card-name">Perth Mint</h3>
+                  <p class="partner-card-est">Est. 1899 · Western Australian Government</p>
+                </div>
+              </div>
+              <p class="partner-card-body">All gold and silver purchased through Vault is physically held and insured by the Perth Mint. LBMA-accredited - the same institution that stores Australia's national gold reserves.</p>
+              <div class="partner-creds">
+                <span class="partner-cred-badge">Government-owned</span>
+                <span class="partner-cred-badge">LBMA accredited</span>
+                <span class="partner-cred-badge">100% physical backing</span>
+              </div>
+            </article>
+
+            <article class="partner-card" tabindex="0">
+              <div class="partner-card-head">
+                <span class="partner-card-icon" aria-hidden="true">
+                  <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="6" y="14" width="36" height="22" rx="5" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M6 22h36" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M12 30h8M36 30h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                </span>
+                <div>
+                  <p class="partner-card-tag">Card payment infrastructure</p>
+                  <h3 class="partner-card-name">Visa</h3>
+                  <p class="partner-card-est">Global card network · 200+ countries</p>
+                </div>
+              </div>
+              <p class="partner-card-body">The Vault Visa Debit card works wherever Visa is accepted worldwide. Includes Visa's Zero Liability fraud protection and full dispute resolution framework for all cardholders.</p>
+              <div class="partner-creds">
+                <span class="partner-cred-badge">Zero Liability protection</span>
+                <span class="partner-cred-badge">Global acceptance</span>
+                <span class="partner-cred-badge">Instant tap to pay</span>
+              </div>
+            </article>
+
+            <article class="partner-card" tabindex="0">
+              <div class="partner-card-head">
+                <span class="partner-card-icon" aria-hidden="true">
+                  <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M24 8l14 6v10c0 8-6 14.5-14 16C10 38.5 4 32 4 24V14l20-6z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                    <path d="M16 24l6 6 10-10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </span>
+                <div>
+                  <p class="partner-card-tag">Savings and deposit products</p>
+                  <h3 class="partner-card-name">APRA licensed ADI</h3>
+                  <p class="partner-card-est">Authorised Deposit-taking Institution</p>
+                </div>
+              </div>
+              <p class="partner-card-body">Vault savings are held with an APRA licensed ADI. Customer deposits are covered by the Australian Government's Financial Claims Scheme up to $250,000 per depositor.</p>
+              <div class="partner-creds">
+                <span class="partner-cred-badge">APRA regulated</span>
+                <span class="partner-cred-badge shield-badge">$250,000 FCS protected</span>
+                <span class="partner-cred-badge">Government-backed</span>
+              </div>
+            </article>
+
+          </div><!-- /partner-cards -->
+
+          <!-- Compliance two-column -->
+          <div class="compliance-section">
+            <div class="compliance-col">
+              <h3>Australian regulatory bodies</h3>
+              <ul class="compliance-list">
+                <li><strong>ASIC</strong> - Vault registered as AFSL holder or authorised representative</li>
+                <li><strong>APRA</strong> - Savings product held with an APRA licensed ADI</li>
+                <li><strong>OAIC / CDR</strong> - Vault is a CDR-accredited data recipient for Open Banking</li>
+                <li><strong>AUSTRAC</strong> - AML/CTF compliance with identity verification on account creation</li>
+                <li><strong>ACCC</strong> - Consumer Data Right framework with user consent-based bank connection</li>
+              </ul>
+            </div>
+            <div class="compliance-col">
+              <h3>User protection measures</h3>
+              <ul class="compliance-list">
+                <li><strong>Financial Claims Scheme</strong> - savings up to $250,000 government-protected</li>
+                <li><strong>256-bit encryption</strong> - all data in transit and at rest</li>
+                <li><strong>Read-only bank connection</strong> - Vault cannot move money from your bank</li>
+                <li><strong>Biometric authentication</strong> - Face ID and fingerprint for all sensitive actions</li>
+                <li><strong>No user data sold</strong> - revenue from savings spread and subscription only</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Compliance badge row -->
+          <div class="compliance-badge-row" aria-label="Regulatory compliance badges">
+            <span class="comp-badge">ASIC Registered</span>
+            <span class="comp-badge">APRA / ADI</span>
+            <span class="comp-badge">CDR Accredited</span>
+            <span class="comp-badge">AUSTRAC Compliant</span>
+            <span class="comp-badge">FCS Protected</span>
+            <span class="comp-badge">256-bit Encrypted</span>
+          </div>
+
+          <blockquote class="partners-quote">
+            "Your savings are backed by an APRA licensed institution. Your gold is held by the Perth Mint, the same vault that stores Australia's national gold reserves."
+          </blockquote>
+
+          <p class="partners-doc-link"><a href="#">Read our full compliance documentation →</a></p>
+
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════════════
+           SECTION 08 - STAKEHOLDERS - TEAM & ADVISORY  (Phase 2)
+        ══════════════════════════════════════════════════════════════ -->
+      <section class="stakeholders-section" id="team">
+        <div class="stakeholders-inner">
+
+          <div class="stakeholders-header">
+            <p class="eyebrow">THE PEOPLE BEHIND VAULT</p>
+            <h2>Built by Australians who understand your money</h2>
+            <p class="stakeholders-lead">Trust in a financial product is often personal. These are the people building Vault - and the advisors they lean on.</p>
+          </div>
+
+          <!-- Core team - 3-column grid -->
+          <div class="team-grid">
+
+            <article class="team-card" data-modal="team" tabindex="0">
+              <div class="team-avatar" data-initials="AH" style="--av-hue:0"></div>
+              <div class="team-info">
+                <span class="team-cred-pill">CEO</span>
+                <h3>Alex Harrison</h3>
+                <p class="team-title">CEO &amp; Co-Founder</p>
+                <p class="team-bio">Former Commonwealth Bank digital product lead with 12 years in Australian financial services. Led next-generation savings product design before founding Vault.</p>
+                <div class="team-creds"><span class="cred-badge">AFSL</span><span class="cred-badge">MBA</span></div>
+              </div>
+            </article>
+
+            <article class="team-card" data-modal="team" tabindex="0">
+              <div class="team-avatar" data-initials="MK" style="--av-hue:20"></div>
+              <div class="team-info">
+                <span class="team-cred-pill">CTO</span>
+                <h3>Maya Krishnan</h3>
+                <p class="team-title">CTO &amp; Co-Founder</p>
+                <p class="team-bio">Fintech engineering veteran who built banking infrastructure at Airwallex and Zip. Passionate about secure-by-design systems and real-time financial data.</p>
+                <div class="team-creds"><span class="cred-badge">Eng. PhD</span><span class="cred-badge">AWS Certified</span></div>
+              </div>
+            </article>
+
+            <article class="team-card" data-modal="team" tabindex="0">
+              <div class="team-avatar" data-initials="JT" style="--av-hue:340"></div>
+              <div class="team-info">
+                <span class="team-cred-pill">Compliance</span>
+                <h3>James Tran</h3>
+                <p class="team-title">Chief Compliance Officer</p>
+                <p class="team-bio">ASIC regulatory specialist with background at Deloitte financial advisory. Oversees AFSL, AML/CTF, and CDR accreditation for the Vault platform.</p>
+                <div class="team-creds"><span class="cred-badge">ASIC</span><span class="cred-badge">CPA</span></div>
+              </div>
+            </article>
+
+            <article class="team-card" data-modal="team" tabindex="0">
+              <div class="team-avatar" data-initials="SC" style="--av-hue:10"></div>
+              <div class="team-info">
+                <span class="team-cred-pill">Partnerships</span>
+                <h3>Sophie Chen</h3>
+                <p class="team-title">Head of Partnerships</p>
+                <p class="team-bio">Manages strategic relationships with Perth Mint, ADI partners, and Visa. Previously ran institutional partnerships at ANZ and Macquarie.</p>
+                <div class="team-creds"><span class="cred-badge">CFP</span></div>
+              </div>
+            </article>
+
+            <article class="team-card" data-modal="team" tabindex="0">
+              <div class="team-avatar" data-initials="LW" style="--av-hue:350"></div>
+              <div class="team-info">
+                <span class="team-cred-pill">Product</span>
+                <h3>Liam Watts</h3>
+                <p class="team-title">Head of Product</p>
+                <p class="team-bio">UX-first product leader with deep roots in fintech accessibility. Led user research at NAB and brought human-centred design to Vault's core experience.</p>
+                <div class="team-creds"><span class="cred-badge">PMP</span><span class="cred-badge">UX Cert</span></div>
+              </div>
+            </article>
+
+            <article class="team-card" data-modal="team" tabindex="0">
+              <div class="team-avatar" data-initials="PR" style="--av-hue:30"></div>
+              <div class="team-info">
+                <span class="team-cred-pill">Growth</span>
+                <h3>Priya Rao</h3>
+                <p class="team-title">Head of Growth</p>
+                <p class="team-bio">Performance marketing specialist focused on fintech acquisition and retention. Built growth frameworks for three Australian fintech scale-ups before joining Vault.</p>
+                <div class="team-creds"><span class="cred-badge">Google Ads</span></div>
+              </div>
+            </article>
+
+          </div><!-- /team-grid -->
+
+          <!-- Advisory board -->
+          <div class="advisory-header">
+            <p class="eyebrow">ADVISORY BOARD</p>
+          </div>
+          <div class="advisory-strip">
+            <div class="advisory-tile" data-modal="advisor" role="button" tabindex="0">
+              <span class="advisory-role">Financial services</span>
+              <p>Former Big 4 bank executive</p>
+            </div>
+            <div class="advisory-tile" data-modal="advisor" role="button" tabindex="0">
+              <span class="advisory-role">Fintech &amp; startups</span>
+              <p>Afterpay / Airwallex era founder</p>
+            </div>
+            <div class="advisory-tile" data-modal="advisor" role="button" tabindex="0">
+              <span class="advisory-role">Precious metals</span>
+              <p>Former Perth Mint executive</p>
+            </div>
+            <div class="advisory-tile" data-modal="advisor" role="button" tabindex="0">
+              <span class="advisory-role">Legal &amp; regulatory</span>
+              <p>AFSL specialist solicitor</p>
+            </div>
+            <div class="advisory-tile" data-modal="advisor" role="button" tabindex="0">
+              <span class="advisory-role">Cybersecurity</span>
+              <p>Banking-grade security background</p>
+            </div>
+            <div class="advisory-tile" data-modal="advisor" role="button" tabindex="0">
+              <span class="advisory-role">Marketing</span>
+              <p>Financial services brand strategist</p>
+            </div>
+          </div>
+
+          <!-- Mission callout banner -->
+          <div class="mission-callout">
+            <p>"Vault was built by a team who spent years watching Australians settle for financial products that weren't designed for them. We think you deserve better."</p>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════════════
+           SECTION 09 - CONNECT WITH A PROFESSIONAL  (Phase 2)
+        ══════════════════════════════════════════════════════════════ -->
+      <section class="connect-section" id="connect">
+        <div class="connect-inner">
+
+          <div class="connect-header">
+            <p class="eyebrow">EXPERT GUIDANCE, WHEN YOU NEED IT</p>
+            <h2>Talk to a licensed financial advisor - inside Vault</h2>
+            <p class="connect-lead">The single biggest reason people don't act on financial decisions is uncertainty. Connecting you to a human expert - on a platform you already trust - removes that final barrier.</p>
+          </div>
+
+          <!-- Three tier cards -->
+          <div class="tier-cards">
+
+            <article class="tier-card" data-modal="advisor" tabindex="0">
+              <p class="tier-label">AI Weekly Digest</p>
+              <strong class="tier-price">Free</strong>
+              <span class="tier-plan">Every Vault+ subscriber</span>
+              <p class="tier-desc">Automated analysis of your spending, savings, and metal holdings with personalised nudges and a weekly wellness score. Intelligent, not human - but already live.</p>
+              <ul class="tier-includes">
+                <li>Weekly score &amp; insights</li>
+                <li>Spending pattern analysis</li>
+                <li>Personalised savings nudges</li>
+              </ul>
+            </article>
+
+            <article class="tier-card tier-card--featured" data-modal="advisor" tabindex="0">
+              <span class="tier-popular-badge">Most popular</span>
+              <p class="tier-label">Video Consultation</p>
+              <strong class="tier-price">$49<span>/session</span></strong>
+              <span class="tier-plan">No subscription required</span>
+              <p class="tier-desc">30 minute video call with a licensed Certified Financial Planner. Covers savings strategy, gold allocation, and budgeting for your specific goal.</p>
+              <ul class="tier-includes">
+                <li>Licensed CFP advisor</li>
+                <li>Zoom or Google Meet</li>
+                <li>AI post session summary</li>
+              </ul>
+              <a class="button primary" href="app.html">Book a consultation</a>
+            </article>
+
+            <article class="tier-card" data-modal="advisor" tabindex="0">
+              <p class="tier-label">Dedicated Advisor</p>
+              <strong class="tier-price">$199<span>/month</span></strong>
+              <span class="tier-plan">Premium users</span>
+              <p class="tier-desc">Your assigned financial advisor reviews your Vault account monthly, adjusts strategy, and answers quick questions via in-app chat with full account access.</p>
+              <ul class="tier-includes">
+                <li>Monthly account review</li>
+                <li>In-app chat access</li>
+                <li>Full account visibility</li>
+              </ul>
+            </article>
+
+          </div><!-- /tier-cards -->
+
+          <!-- Trust signals row -->
+          <div class="connect-trust-row">
+            <span class="connect-trust-item">All advisors are ASIC registered CFPs</span>
+            <span class="connect-trust-item">Background checked and user reviewed</span>
+            <span class="connect-trust-item">ASIC registration numbers on every profile</span>
+            <span class="connect-trust-item">Vault takes no commission on investment decisions</span>
+          </div>
+
+          <!-- Sample advisor directory -->
+          <div class="connect-dir-header">
+            <p class="eyebrow">ADVISOR DIRECTORY</p>
+            <h3>Meet a few of our advisors</h3>
+          </div>
+          <div class="advisor-grid">
+
+            <article class="advisor-card">
+              <div class="advisor-avatar" data-initials="SM"></div>
+              <div class="advisor-info">
+                <h4>Sarah Mitchell, CFP</h4>
+                <p class="advisor-asic">ASIC #123456 · 11 years experience</p>
+                <div class="advisor-tags">
+                  <span>Savings</span><span>First home</span><span>Budgeting</span>
+                </div>
+                <div class="advisor-rating">
+                  <span class="stars">★★★★★</span>
+                  <span class="rating-count">4.9 (48 sessions)</span>
+                </div>
+                <p class="advisor-quote">"Helped me understand gold allocation in under 30 minutes."</p>
+                <div class="advisor-footer">
+                  <span class="advisor-avail">Next: Tomorrow, 10am</span>
+                  <span class="advisor-price">$49 / session</span>
+                </div>
+                <a class="button soft advisor-book-btn" href="app.html">Book now →</a>
+              </div>
+            </article>
+
+            <article class="advisor-card">
+              <div class="advisor-avatar" data-initials="DC"></div>
+              <div class="advisor-info">
+                <h4>David Chen, CFP</h4>
+                <p class="advisor-asic">ASIC #234567 · 8 years experience</p>
+                <div class="advisor-tags">
+                  <span>Precious metals</span><span>Retirement</span><span>Tax</span>
+                </div>
+                <div class="advisor-rating">
+                  <span class="stars">★★★★★</span>
+                  <span class="rating-count">4.8 (32 sessions)</span>
+                </div>
+                <p class="advisor-quote">"Clear, practical advice that made me feel confident about investing."</p>
+                <div class="advisor-footer">
+                  <span class="advisor-avail">Next: Today, 3pm</span>
+                  <span class="advisor-price">$49 / session</span>
+                </div>
+                <a class="button soft advisor-book-btn" href="app.html">Book now →</a>
+              </div>
+            </article>
+
+            <article class="advisor-card">
+              <div class="advisor-avatar" data-initials="NP"></div>
+              <div class="advisor-info">
+                <h4>Natalie Park, CFP</h4>
+                <p class="advisor-asic">ASIC #345678 · 6 years experience</p>
+                <div class="advisor-tags">
+                  <span>DCA strategy</span><span>Savings goals</span><span>Budgeting</span>
+                </div>
+                <div class="advisor-rating">
+                  <span class="stars">★★★★★</span>
+                  <span class="rating-count">4.9 (21 sessions)</span>
+                </div>
+                <p class="advisor-quote">"Set up my AutoAccumulate strategy - it's been running perfectly."</p>
+                <div class="advisor-footer">
+                  <span class="advisor-avail">Next: Fri, 9am</span>
+                  <span class="advisor-price">$49 / session</span>
+                </div>
+                <a class="button soft advisor-book-btn" href="app.html">Book now →</a>
+              </div>
+            </article>
+
+          </div><!-- /advisor-grid -->
+
+          <!-- Education hub teaser -->
+          <div class="education-header">
+            <p class="eyebrow">EDUCATION HUB</p>
+            <h3>Read before you book</h3>
+          </div>
+          <div class="education-strip">
+
+            <article class="edu-card" data-modal="save" role="button" tabindex="0">
+              <span class="edu-tag">Savings</span>
+              <h4>What is a HISA and why does the rate matter?</h4>
+              <p>Understanding how high-interest savings accounts compound - and why 8.5% vs 2.1% is a meaningful difference over time.</p>
+              <span class="edu-read">5 min read</span>
+            </article>
+
+            <article class="edu-card" data-modal="metals" role="button" tabindex="0">
+              <span class="edu-tag">Precious metals</span>
+              <h4>Gold vs silver: which is right for me?</h4>
+              <p>A plain-English comparison of both metals - liquidity, risk profile, storage, and how they fit into a modern Australian portfolio.</p>
+              <span class="edu-read">4 min read</span>
+            </article>
+
+            <article class="edu-card" data-modal="invest" role="button" tabindex="0">
+              <span class="edu-tag">Strategy</span>
+              <h4>How does dollar-cost averaging work?</h4>
+              <p>Why buying a fixed amount weekly beats timing the market - and how AutoAccumulate does it for you automatically.</p>
+              <span class="edu-read">3 min read</span>
+            </article>
+
+          </div><!-- /education-strip -->
+
+          <!-- Full-width CTA -->
+          <div class="connect-cta-bar">
+            <a class="button connect-cta-btn" href="app.html">Book your first consultation →</a>
+          </div>
+
+          <blockquote class="connect-quote">
+            "Not sure where to start? A 30 minute conversation with a licensed advisor can give you more clarity than six months of Googling, and it costs less than a dinner out."
+          </blockquote>
+
+        </div>
+      </section>
+
+      <section class="database-section" id="database">
+        <div>
+          <p class="eyebrow">Database solution</p>
+          <h2>Start with the live demo database, then move to Postgres.</h2>
+          <p>Today this prototype saves users, balances, cards, transactions, budgets and admin edits into <code>data/vault-db.json</code>. For a real Vault Bank build, keep the same API shape and replace the JSON file with a proper database layer.</p>
+        </div>
+        <div class="database-grid">
+          <article>
+            <span class="feature-icon">01</span>
+            <h3>Prototype</h3>
+            <p>Keep the current JSON database for class demo and quick testing.</p>
+          </article>
+          <article>
+            <span class="feature-icon">02</span>
+            <h3>App build</h3>
+            <p>Use SQLite with Prisma so login, cards and transactions are structured.</p>
+          </article>
+          <article>
+            <span class="feature-icon">03</span>
+            <h3>Production</h3>
+            <p>Move to Supabase/Postgres with auth, encrypted secrets and row security.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>VAULT Bank prototype</span>
+      <span>Demo login: sarah@vault.au / vault123</span>
+    </footer>
+    <!-- ── Feature detail modal ──────────────────────────────────────── -->
+    <div class="vaultmodal-overlay" id="vaultModal" role="dialog" aria-modal="true" aria-label="Feature details">
+      <div class="vaultmodal" id="vaultModalPanel">
+        <button class="vaultmodal-close" id="vaultModalClose" aria-label="Close panel">
+          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+        <div class="vaultmodal-body" id="vaultModalBody"></div>
+      </div>
+    </div>
+
+    <script src="vault-intro.js"></script>
+    <script src="animations.js"></script>
+    <script src="modals.js"></script>
+  </body>
+</html>

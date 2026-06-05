@@ -1,0 +1,235 @@
+{
+  "users": [
+    {
+      "id": "u1",
+      "name": "Sarah Chen",
+      "email": "sarah@vault.au",
+      "password": "vault123",
+      "avatar": "S",
+      "balance": 16032.05,
+      "monthlyIncome": 8686,
+      "spent": 4000,
+      "saved": 850,
+      "trustScore": 78,
+      "createdAt": "2026-05-20T00:00:00.000Z"
+    }
+  ],
+  "budgets": {
+    "u1": [
+      {
+        "id": "b1",
+        "name": "Groceries",
+        "spent": 340,
+        "limit": 400,
+        "icon": "basket"
+      },
+      {
+        "id": "b2",
+        "name": "Dining",
+        "spent": 234,
+        "limit": 320,
+        "icon": "fork"
+      },
+      {
+        "id": "b3",
+        "name": "Transport",
+        "spent": 188,
+        "limit": 260,
+        "icon": "train"
+      },
+      {
+        "id": "b4",
+        "name": "Shopping",
+        "spent": 522,
+        "limit": 500,
+        "icon": "bag"
+      },
+      {
+        "id": "b5",
+        "name": "Subscriptions",
+        "spent": 91,
+        "limit": 120,
+        "icon": "repeat"
+      }
+    ]
+  },
+  "savings": {
+    "u1": {
+      "flexible": 2440,
+      "fixed": 5512,
+      "goals": [
+        {
+          "id": "g1",
+          "name": "Emergency fund",
+          "current": 2440,
+          "target": 5000
+        },
+        {
+          "id": "g2",
+          "name": "Japan trip",
+          "current": 1780,
+          "target": 4200
+        },
+        {
+          "id": "g3",
+          "name": "New laptop",
+          "current": 620,
+          "target": 2100
+        }
+      ]
+    }
+  },
+  "metals": {
+    "u1": {
+      "gold": 12.42,
+      "silver": 38
+    }
+  },
+  "splits": {
+    "u1": [
+      {
+        "id": "s1",
+        "name": "Dinner at Kumo",
+        "friend": "Mia",
+        "amount": 42.5,
+        "status": "owed"
+      },
+      {
+        "id": "s2",
+        "name": "Beach house",
+        "friend": "Noah",
+        "amount": 118,
+        "status": "owe"
+      },
+      {
+        "id": "s3",
+        "name": "Coffee run",
+        "friend": "Ava",
+        "amount": 7.8,
+        "status": "owed"
+      }
+    ]
+  },
+  "transactions": {
+    "u1": [
+      {
+        "id": "t1",
+        "title": "Salary March",
+        "category": "Income",
+        "amount": 8888,
+        "type": "income",
+        "date": "Today"
+      },
+      {
+        "id": "t2",
+        "title": "Woolworths",
+        "category": "Groceries",
+        "amount": -87.54,
+        "type": "expense",
+        "date": "Today"
+      },
+      {
+        "id": "t3",
+        "title": "BBQ",
+        "category": "Dining",
+        "amount": -234,
+        "type": "expense",
+        "date": "Today"
+      },
+      {
+        "id": "t4",
+        "title": "Auto save",
+        "category": "Savings",
+        "amount": -50,
+        "type": "transfer",
+        "date": "Yesterday"
+      }
+    ]
+  },
+  "cards": {
+    "u1": {
+      "holder": "Sarah Chen",
+      "last4": "8821",
+      "pin": "4821",
+      "cvv": "482",
+      "dailyLimit": 5000,
+      "frozen": false,
+      "status": "Active"
+    }
+  },
+  "settings": {
+    "goldAud": 3318.2,
+    "silverAud": 38.4,
+    "metalFee": 0.99,
+    "bankName": "VAULT Bank",
+    "tagline": "Spend smarter. Save calmer. Grow with confidence."
+  },
+  "actions": [
+    {
+      "id": "a_3f30c0b0e2",
+      "action": "login",
+      "detail": "sarah@vault.au signed in",
+      "at": "2026-06-05T04:08:14.346Z"
+    },
+    {
+      "id": "a_1b75b22265",
+      "action": "login",
+      "detail": "sarah@vault.au signed in",
+      "at": "2026-06-05T03:43:39.078Z"
+    },
+    {
+      "id": "a_1593d2afb0",
+      "action": "login",
+      "detail": "sarah@vault.au signed in",
+      "at": "2026-06-05T03:25:47.116Z"
+    },
+    {
+      "id": "a_6ae928dcbc",
+      "action": "login",
+      "detail": "sarah@vault.au signed in",
+      "at": "2026-06-05T03:16:25.635Z"
+    },
+    {
+      "id": "a_6761b2e28f",
+      "action": "login",
+      "detail": "sarah@vault.au signed in",
+      "at": "2026-06-05T03:14:48.168Z"
+    },
+    {
+      "id": "a_5894180e10",
+      "action": "login",
+      "detail": "sarah@vault.au signed in",
+      "at": "2026-06-05T03:11:24.244Z"
+    },
+    {
+      "id": "a_110deb02c6",
+      "action": "login",
+      "detail": "sarah@vault.au signed in",
+      "at": "2026-06-05T03:08:05.890Z"
+    },
+    {
+      "id": "a_479a92b2e3",
+      "action": "login",
+      "detail": "sarah@vault.au signed in",
+      "at": "2026-06-04T01:33:37.955Z"
+    },
+    {
+      "id": "a_1997ad9ab1",
+      "action": "login",
+      "detail": "sarah@vault.au signed in",
+      "at": "2026-06-04T01:15:27.165Z"
+    },
+    {
+      "id": "a_1dc5737e54",
+      "action": "login",
+      "detail": "sarah@vault.au signed in",
+      "at": "2026-05-23T10:51:04.267Z"
+    },
+    {
+      "id": "a_7087c6b4d2",
+      "action": "login",
+      "detail": "sarah@vault.au signed in",
+      "at": "2026-05-20T02:27:41.401Z"
+    }
+  ]
+}

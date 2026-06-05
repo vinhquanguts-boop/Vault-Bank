@@ -1,0 +1,443 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>VAULT App Demo</title>
+    <link rel="stylesheet" href="styles.css?v=20260605-app-clarity" />
+  </head>
+  <body class="app-page">
+    <div class="vault-intro app-intro" data-vault-intro>
+      <span class="vault-door vault-door-left" aria-hidden="true"></span>
+      <span class="vault-door vault-door-right" aria-hidden="true"></span>
+      <button class="vault-intro-logo" type="button" aria-label="Open VAULT app">
+        <img src="assets/logo2.png" alt="" />
+        <span>Open account</span>
+      </button>
+    </div>
+
+    <div class="app-layout">
+      <aside class="sidebar">
+        <a class="brand compact" href="index.html"><img src="assets/logo2.png" alt="VAULT" /></a>
+        <nav class="app-nav" aria-label="App sections">
+          <button class="active" data-tab="home">Home</button>
+          <button data-tab="spend">Spend</button>
+          <button data-tab="save">Save</button>
+          <button data-tab="metals">Metals</button>
+          <button data-tab="split">Split</button>
+          <button data-tab="transfer">Transfer</button>
+          <button data-tab="card">Card</button>
+          <button data-tab="profile">Profile</button>
+        </nav>
+        <a class="button soft wide" href="admin.html">Open admin</a>
+      </aside>
+
+      <main class="workspace">
+        <section class="auth-panel" id="authPanel">
+          <div class="auth-card">
+            <img class="auth-logo" src="assets/logo2.png" alt="VAULT" />
+            <div class="auth-tabs">
+              <button class="active" data-auth="login">Log in</button>
+              <button data-auth="signup">Sign up</button>
+            </div>
+            <form id="loginForm" class="auth-form">
+              <label>Email<input name="email" value="sarah@vault.au" autocomplete="email" /></label>
+              <label>Password<input name="password" value="vault123" type="password" autocomplete="current-password" /></label>
+              <button class="button primary wide" type="submit">Log in</button>
+            </form>
+            <form id="signupForm" class="auth-form hidden">
+              <label>Full name<input name="name" placeholder="Sarah Chen" autocomplete="name" /></label>
+              <label>Email<input name="email" placeholder="you@example.com" autocomplete="email" /></label>
+              <label>Password<input name="password" type="password" placeholder="Create password" autocomplete="new-password" /></label>
+              <button class="button primary wide" type="submit">Create account</button>
+            </form>
+            <p class="form-note" id="authMessage">Demo account is ready for you.</p>
+          </div>
+        </section>
+
+        <section class="dashboard hidden" id="dashboard">
+          <header class="workspace-header">
+            <div>
+              <p class="eyebrow">Welcome back</p>
+              <h1 id="helloName">Vault dashboard</h1>
+            </div>
+            <div class="header-actions">
+              <button class="button soft" id="refreshBtn">Refresh data</button>
+              <button class="button ghost" id="logoutBtn">Log out</button>
+            </div>
+          </header>
+
+          <section class="tab-view active" id="tab-home">
+            <div class="hero-dashboard">
+              <div>
+                <span class="micro">TOTAL BALANCE</span>
+                <strong class="money" id="balance">$0.00</strong>
+                <p id="digestText">Your money is organized.</p>
+              </div>
+              <div class="quick-action">
+                <input id="manualAmount" type="number" step="0.01" placeholder="Amount" />
+                <input id="manualTitle" placeholder="Transaction title" />
+                <button class="button primary" id="addTransactionBtn">Add transaction</button>
+              </div>
+            </div>
+            <div class="metrics" id="metrics"></div>
+            <div class="two-col">
+              <section class="panel">
+                <h2>AI weekly digest</h2>
+                <div class="ai-card">
+                  <b>Score <span id="trustScore">78</span></b>
+                  <p>You are on track this month. Savings are growing faster than discretionary spend.</p>
+                </div>
+              </section>
+              <section class="panel">
+                <h2>Recent transactions</h2>
+                <div class="list" id="transactions"></div>
+              </section>
+            </div>
+          </section>
+
+          <section class="tab-view" id="tab-spend">
+            <div class="section-heading">
+              <h2>Spend tracking</h2>
+              <p>Budget progress, warnings and category health.</p>
+              <button class="button soft small" id="newBudgetBtn" style="margin-top:14px">+ Add category</button>
+            </div>
+            <!-- Add budget form -->
+            <section class="panel create-split-panel hidden" id="createBudgetPanel">
+              <h3>New budget category</h3>
+              <div class="split-form">
+                <label class="app-label">Category name <input id="budgetName" placeholder="Entertainment" /></label>
+                <label class="app-label">Monthly limit
+                  <div class="prefix-input"><span>$</span><input id="budgetLimit" type="number" placeholder="0.00" step="1" /></div>
+                </label>
+              </div>
+              <div class="action-row" style="margin-top:14px">
+                <button class="button soft" id="cancelBudgetBtn">Cancel</button>
+                <button class="button primary" id="confirmBudgetBtn">Add category →</button>
+              </div>
+            </section>
+            <div class="budget-grid" id="budgets"></div>
+            <!-- Transaction filters + full list -->
+            <div class="section-heading" style="margin-top:28px">
+              <h2>Transactions</h2>
+            </div>
+            <div class="filter-tabs" id="txFilterTabs">
+              <button class="active" data-tx-filter="all">All</button>
+              <button data-tx-filter="income">Income</button>
+              <button data-tx-filter="expense">Expenses</button>
+              <button data-tx-filter="Savings">Savings</button>
+              <button data-tx-filter="Metals">Metals</button>
+              <button data-tx-filter="Transfer">Transfer</button>
+              <button data-tx-filter="Split">Split</button>
+            </div>
+            <div class="list" id="txList"></div>
+          </section>
+
+          <section class="tab-view" id="tab-save">
+            <div class="section-heading">
+              <h2>Savings accounts</h2>
+              <p>Move money between balance, flexible savings and fixed savings.</p>
+            </div>
+            <div class="two-col">
+              <section class="panel savings-panel">
+                <h3>Flexible savings <span>6.5% p.a.</span></h3>
+                <strong id="flexibleSavings">$0</strong>
+                <div class="action-row">
+                  <input id="flexAmount" type="number" value="50" placeholder="Amount" />
+                  <button class="button primary" data-save="flexible">Deposit</button>
+                  <button class="button soft" data-withdraw="flexible">Withdraw</button>
+                </div>
+              </section>
+              <section class="panel savings-panel">
+                <h3>Fixed savings <span>8.5% p.a.</span></h3>
+                <strong id="fixedSavings">$0</strong>
+                <div class="action-row">
+                  <input id="fixedAmount" type="number" value="100" placeholder="Amount" />
+                  <button class="button primary" data-save="fixed">Deposit</button>
+                </div>
+                <p class="form-note">Fixed term - deposit only. Contact support to break early.</p>
+              </section>
+            </div>
+            <!-- Goals -->
+            <div class="savings-goals-header">
+              <h3>Savings goals</h3>
+              <button class="button soft small" id="newGoalBtn">+ New goal</button>
+            </div>
+            <!-- New goal form -->
+            <section class="panel create-split-panel hidden" id="createGoalPanel">
+              <h3>New goal</h3>
+              <div class="split-form">
+                <label class="app-label">Goal name <input id="goalName" placeholder="Japan trip" /></label>
+                <label class="app-label">Target amount
+                  <div class="prefix-input"><span>$</span><input id="goalTarget" type="number" placeholder="0.00" step="0.01" /></div>
+                </label>
+              </div>
+              <div class="action-row" style="margin-top:14px">
+                <button class="button soft" id="cancelGoalBtn">Cancel</button>
+                <button class="button primary" id="confirmGoalBtn">Create goal →</button>
+              </div>
+            </section>
+            <div class="goal-list" id="goals"></div>
+          </section>
+
+          <section class="tab-view" id="tab-metals">
+            <div class="section-heading">
+              <h2>Gold &amp; Silver</h2>
+              <p>Real metals physically held by the Perth Mint. Buy and sell at live AUD spot prices.</p>
+            </div>
+            <div class="two-col">
+              <section class="panel">
+                <span class="micro">TOTAL HOLDINGS VALUE</span>
+                <strong id="metalValue" class="metal-total-val">$0.00</strong>
+                <p id="metalHoldings" class="metal-holdings-text">0g gold + 0g silver</p>
+                <div id="metalBreakdown" class="metal-breakdown"></div>
+              </section>
+              <section class="panel metal-trade-panel">
+                <div class="bs-tabs">
+                  <button class="active" data-metal-action="buy">Buy</button>
+                  <button data-metal-action="sell">Sell</button>
+                </div>
+                <div class="metal-type-row">
+                  <button class="metal-type-btn active" data-metal="gold"><span class="metal-sym">Au</span>Gold</button>
+                  <button class="metal-type-btn" data-metal="silver"><span class="metal-sym">Ag</span>Silver</button>
+                </div>
+                <label class="app-label">Grams
+                  <input id="metalGrams" type="number" value="1" step="0.1" min="0.1" />
+                </label>
+                <div class="estimate-panel" id="metalEstimatePanel"></div>
+                <button class="button primary wide" id="metalConfirmBtn">Calculating…</button>
+                <p class="form-note" id="metalActionNote"></p>
+              </section>
+            </div>
+          </section>
+
+          <section class="tab-view" id="tab-split">
+            <div class="section-heading">
+              <h2>Split bills</h2>
+              <p>Track what you owe and what friends owe you. Settle from your Vault balance in one tap.</p>
+              <button class="button primary" id="newSplitBtn" style="margin-top:14px">+ New split</button>
+            </div>
+            <!-- Create split form -->
+            <section class="panel create-split-panel hidden" id="createSplitPanel">
+              <h3>New split</h3>
+              <div class="split-form">
+                <label class="app-label">Split name
+                  <input id="splitName" placeholder="Beach house weekend" />
+                </label>
+                <label class="app-label">Total amount
+                  <div class="prefix-input"><span>$</span><input id="splitAmount" type="number" placeholder="0.00" step="0.01" /></div>
+                </label>
+                <label class="app-label">Friends (comma separated)
+                  <input id="splitFriends" placeholder="Noah, Emma, Marcus" />
+                </label>
+                <div>
+                  <p class="app-label-text">Split type</p>
+                  <div class="split-type-tabs">
+                    <button class="active" data-split-type="equal">Equal</button>
+                    <button data-split-type="custom">Custom $</button>
+                    <button data-split-type="percentage">%</button>
+                    <button data-split-type="itemized">Itemized</button>
+                  </div>
+                </div>
+                <div id="splitTypeDetail" class="split-type-detail"></div>
+              </div>
+              <div class="action-row" style="margin-top:16px">
+                <button class="button soft" id="cancelSplitBtn">Cancel</button>
+                <button class="button primary" id="confirmSplitBtn">Create split →</button>
+              </div>
+            </section>
+            <!-- Filter tabs -->
+            <div class="filter-tabs">
+              <button class="active" data-split-filter="all">All</button>
+              <button data-split-filter="owe">I owe</button>
+              <button data-split-filter="owed">Owed to me</button>
+              <button data-split-filter="settled">Settled</button>
+            </div>
+            <div class="list split-list" id="splits"></div>
+            <div id="splitSummary" class="split-summary"></div>
+          </section>
+
+          <section class="tab-view" id="tab-transfer">
+            <div class="section-heading">
+              <h2>Transfer money</h2>
+              <p>Send by BSB or PayID. Instant within Vault, next business day to external banks.</p>
+            </div>
+            <div class="transfer-method-tabs">
+              <button class="active" data-transfer-method="bsb">Bank account</button>
+              <button data-transfer-method="payid">PayID</button>
+              <button data-transfer-method="saved">Saved</button>
+            </div>
+            <!-- BSB form -->
+            <section class="panel transfer-panel" id="transferPanelBsb">
+              <div class="transfer-form">
+                <div class="form-row-2">
+                  <label class="app-label">BSB<input id="tBsb" placeholder="062-000" maxlength="7" /></label>
+                  <label class="app-label">Account number<input id="tAccount" placeholder="12345678" /></label>
+                </div>
+                <label class="app-label">Account name<input id="tName" placeholder="Noah Williams" /></label>
+                <label class="app-label">Amount<div class="prefix-input"><span>$</span><input id="tAmount" type="number" placeholder="0.00" step="0.01" /></div></label>
+                <label class="app-label">Reference<input id="tRef" placeholder="Rent May" /></label>
+                <label class="app-label check-label"><input type="checkbox" id="tSave" /> Save this recipient</label>
+                <button class="button primary wide" id="tReviewBsbBtn">Review transfer →</button>
+              </div>
+            </section>
+            <!-- PayID form -->
+            <section class="panel transfer-panel hidden" id="transferPanelPayid">
+              <div class="transfer-form">
+                <label class="app-label">PayID type
+                  <select id="tPayidType">
+                    <option value="email">Email address</option>
+                    <option value="phone">Mobile number</option>
+                    <option value="abn">ABN</option>
+                    <option value="business">Business name</option>
+                  </select>
+                </label>
+                <label class="app-label">PayID<input id="tPayidValue" placeholder="noah@example.com" /></label>
+                <label class="app-label">Amount<div class="prefix-input"><span>$</span><input id="tPayidAmount" type="number" placeholder="0.00" step="0.01" /></div></label>
+                <label class="app-label">Reference<input id="tPayidRef" placeholder="Split dinner" /></label>
+                <label class="app-label check-label"><input type="checkbox" id="tSavePayid" /> Save this PayID</label>
+                <button class="button primary wide" id="tReviewPayidBtn">Review transfer →</button>
+              </div>
+            </section>
+            <!-- Saved recipients -->
+            <section class="panel transfer-panel hidden" id="transferPanelSaved">
+              <div id="savedRecipientsList"><p class="form-note">No saved recipients yet.</p></div>
+            </section>
+            <div class="transfer-limits-bar">
+              <span>Daily limit: <strong>$5,000</strong></span>
+              <span>Transfer fee: <strong>Free</strong></span>
+              <span>External: <strong>Next business day</strong></span>
+            </div>
+          </section>
+
+          <section class="tab-view" id="tab-card">
+            <div class="section-heading">
+              <h2>Vault card</h2>
+              <p>Freeze, reveal PIN and CVV, edit daily limit, and change your PIN.</p>
+            </div>
+            <div class="card-workbench">
+              <div class="vault-card-preview" id="vaultCard">
+                <div class="card-flip-inner">
+                  <img class="card-face card-front" src="assets/vault_card_front.png" alt="Vault card front" />
+                  <img class="card-face card-back" src="assets/vault_card_back.png" alt="Vault card back" />
+                </div>
+                <span class="card-state-badge" id="cardPreviewStatus">Active</span>
+                <div class="card-data-strip">
+                  <span>Holder <b id="cardHolder">Sarah Chen</b></span>
+                  <span>Ending <b id="cardLast4">8821</b></span>
+                </div>
+              </div>
+              <section class="panel">
+                <h3>Card controls</h3>
+                <div class="control-grid">
+                  <button class="button primary" id="freezeBtn">Freeze card</button>
+                  <button class="button soft" id="revealPinBtn">Reveal PIN</button>
+                  <button class="button soft" id="revealCvvBtn">Reveal CVV</button>
+                </div>
+                <dl class="details">
+                  <dt>Status</dt><dd id="cardStatus">Active</dd>
+                  <dt>PIN</dt><dd id="pinValue">****</dd>
+                  <dt>CVV</dt><dd id="cvvValue">***</dd>
+                  <dt>Daily limit</dt><dd id="dailyLimit">$5,000</dd>
+                </dl>
+                <!-- Daily limit edit -->
+                <div class="card-extra-section">
+                  <h4>Edit daily limit</h4>
+                  <div class="action-row">
+                    <div class="prefix-input"><span>$</span><input id="newDailyLimit" type="number" placeholder="5000" min="1" max="50000" /></div>
+                    <button class="button soft" id="saveLimitBtn">Save limit</button>
+                  </div>
+                </div>
+                <!-- Change PIN -->
+                <div class="card-extra-section">
+                  <h4>Change PIN</h4>
+                  <div class="split-form">
+                    <label class="app-label">Current PIN <input id="currentPinInput" type="password" maxlength="4" placeholder="••••" /></label>
+                    <label class="app-label">New PIN <input id="newPinInput" type="password" maxlength="4" placeholder="••••" /></label>
+                  </div>
+                  <button class="button soft" id="changePinBtn" style="margin-top:10px">Change PIN</button>
+                </div>
+              </section>
+            </div>
+            <!-- Card transaction history -->
+            <div class="section-heading" style="margin-top:28px">
+              <h2>Card transactions</h2>
+              <p>Recent purchases and ATM activity on this card.</p>
+            </div>
+            <div class="list" id="cardTxList"></div>
+          </section>
+
+          <section class="tab-view" id="tab-profile">
+            <div class="section-heading">
+              <h2>Profile &amp; account</h2>
+              <p>Edit your details, review identity status, and view your security log.</p>
+            </div>
+            <div class="two-col">
+              <!-- Edit profile -->
+              <section class="panel">
+                <h3>Personal details</h3>
+                <div class="split-form">
+                  <label class="app-label">Full name <input id="profileName" placeholder="Sarah Chen" /></label>
+                  <label class="app-label">Email <input id="profileEmail" type="email" placeholder="sarah@vault.au" /></label>
+                </div>
+                <div class="action-row" style="margin-top:14px">
+                  <button class="button primary" id="saveProfileBtn">Save changes</button>
+                </div>
+                <p class="form-note" id="profileNote"></p>
+              </section>
+              <!-- Identity + bank -->
+              <section class="panel">
+                <h3>Verification status</h3>
+                <div class="verify-list">
+                  <div class="verify-row complete"><span class="verify-icon">✓</span><div><strong>Email verified</strong><small>sarah@vault.au</small></div></div>
+                  <div class="verify-row complete"><span class="verify-icon">✓</span><div><strong>Phone verified</strong><small>+61 4xx xxx xxx</small></div></div>
+                  <div class="verify-row complete"><span class="verify-icon">✓</span><div><strong>Identity (AML/DOB)</strong><small>Passed · May 2026</small></div></div>
+                  <div class="verify-row complete"><span class="verify-icon">✓</span><div><strong>Bank account linked</strong><small>CommonBank ····4821</small></div></div>
+                </div>
+                <p class="form-note" style="margin-top:12px">Trust score reflects verification status and account activity.</p>
+              </section>
+            </div>
+            <!-- Security log -->
+            <div class="section-heading" style="margin-top:28px">
+              <h2>Security log</h2>
+              <p>Recent account events and actions.</p>
+            </div>
+            <div class="list" id="securityLog"></div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <!-- Transfer review overlay -->
+    <div class="app-overlay hidden" id="transferReviewOverlay">
+      <div class="overlay-card">
+        <h3>Confirm transfer</h3>
+        <div id="reviewRows" class="review-rows"></div>
+        <div class="pin-section">
+          <p class="pin-label">Enter your PIN to confirm</p>
+          <div class="pin-dots" id="pinDots"><span></span><span></span><span></span><span></span></div>
+          <div class="pin-pad" id="pinPad"></div>
+        </div>
+        <p class="form-note error-note hidden" id="pinError">Incorrect PIN. Try again.</p>
+        <div class="overlay-actions">
+          <button class="button soft" id="cancelReviewBtn">Cancel</button>
+          <button class="button primary" id="confirmTransferBtn" disabled>Confirm →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transfer receipt overlay -->
+    <div class="app-overlay hidden" id="transferReceiptOverlay">
+      <div class="overlay-card receipt-card">
+        <div class="receipt-check">✓</div>
+        <h3>Transfer sent</h3>
+        <div id="receiptRows" class="review-rows"></div>
+        <button class="button primary wide" id="receiptDoneBtn">Done</button>
+      </div>
+    </div>
+
+    <div class="toast" id="toast" role="status"></div>
+    <script src="vault-intro.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

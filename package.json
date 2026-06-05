@@ -1,0 +1,16 @@
+{
+  "name": "vault-website-conversion",
+  "version": "2.0.0",
+  "description": "Vault Bank rebuilt website and interactive banking app prototype.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "vault",
+    "banking",
+    "prototype"
+  ],
+  "author": "Vault Bank",
+  "license": "UNLICENSED"
+}
