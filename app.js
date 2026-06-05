@@ -59,12 +59,12 @@ const money = value => new Intl.NumberFormat("en-AU", {
   currency: "AUD"
 }).format(Number(value || 0));
 
-function toast(message) {
+function toast(message, type = '') {
   const el = $("#toast");
   el.textContent = message;
-  el.classList.add("show");
+  el.className = 'toast show' + (type ? ' toast-' + type : '');
   clearTimeout(toast.timer);
-  toast.timer = setTimeout(() => el.classList.remove("show"), 2600);
+  toast.timer = setTimeout(() => el.classList.remove("show"), 2800);
 }
 
 function parseFirestoreValue(value = {}) {
@@ -455,7 +455,7 @@ async function postAction(payload, successMessage) {
     body: JSON.stringify({ userId: activeUserId, ...payload })
   });
   render();
-  if (successMessage) toast(successMessage);
+  if (successMessage) toast(successMessage, 'success');
 
   /* Flash the relevant value element after each action type */
   if (payload.type === 'transfer-savings') {
@@ -479,6 +479,7 @@ let _transferMethod  = 'bsb';
 let _pendingTransfer = null;
 let _enteredPin      = '';
 let _txFilter        = 'all';  /* transaction filter in Spend tab */
+let _txSearch        = '';     /* keyword search in Spend tab */
 let _pinRevealTimer  = null;   /* auto-hide PIN/CVV */
 let _cvvRevealTimer  = null;
 
@@ -507,6 +508,7 @@ function render() {
   $("#digestText").textContent = `Score ${user.trustScore}. You are on track this month.`;
   $("#trustScore").textContent = user.trustScore;
   renderMetrics();
+  renderHomeSnapshot();
   renderTransactions();
   renderBudgets();
   renderTxList();
@@ -598,12 +600,18 @@ function renderTxList() {
   const el = $("#txList");
   if (!el) return;
   const all = state.transactions;
-  const filtered = _txFilter === 'all' ? all
+  let filtered = _txFilter === 'all' ? all
     : _txFilter === 'income'  ? all.filter(t => t.type === 'income')
     : _txFilter === 'expense' ? all.filter(t => t.type === 'expense')
     : all.filter(t => t.category === _txFilter);
+  if (_txSearch.trim()) {
+    const q = _txSearch.toLowerCase();
+    filtered = filtered.filter(t =>
+      t.title.toLowerCase().includes(q) || t.category.toLowerCase().includes(q)
+    );
+  }
   el.innerHTML = filtered.length === 0
-    ? `<div class="empty-state">No transactions in this category.</div>`
+    ? `<div class="empty-state">No transactions match${_txSearch ? ` "${_txSearch}"` : ' this filter'}.</div>`
     : filtered.slice(0, 30).map(item => `
         <div class="list-row">
           <span><b>${item.title}</b><br><small>${item.category} · ${item.date}${item.receiptId ? ` · ${item.receiptId}` : ''}</small></span>
@@ -826,6 +834,44 @@ function renderProfile() {
   const profileEmail = $("#profileEmail");
   if (profileName && !profileName.value) profileName.placeholder = state.user.name;
   if (profileEmail && !profileEmail.value) profileEmail.placeholder = state.user.email;
+}
+
+function renderHomeSnapshot() {
+  const el = $("#homeSnapshot");
+  if (!el || !state) return;
+
+  const inv = state.investments || { crypto: [] };
+  const savingsTotal = state.savings.flexible + state.savings.fixed;
+  const metalsVal    = metalValue();
+  const cryptoVal    = inv.crypto.filter(c => c.quantity > 0)
+    .reduce((s, c) => s + c.quantity * livePrice(c.symbol), 0);
+  const pendingSplits = state.splits.filter(s => s.status === 'owe');
+  const pendingAmt    = pendingSplits.reduce((n, s) => n + s.amount, 0);
+  const dailyLimit    = state.card?.dailyLimit || 5000;
+  const todaySpent    = state.transactions
+    .filter(t => (t.date === 'Today' || t.date === 'Just now') && t.category === 'Transfer')
+    .reduce((s, t) => s + Math.abs(t.amount), 0);
+  const dailyRemaining = Math.max(0, dailyLimit - todaySpent);
+
+  const cards = [
+    { label: 'Savings',      value: money(savingsTotal),   note: 'Flexible + Fixed' },
+    { label: 'Metals',       value: money(metalsVal),      note: 'Au + Ag holdings' },
+    { label: 'Invested',     value: money(cryptoVal),      note: 'Crypto portfolio' },
+    {
+      label: 'Pending splits',
+      value: pendingSplits.length ? `${pendingSplits.length} split${pendingSplits.length > 1 ? 's' : ''}` : 'None',
+      note:  pendingSplits.length ? `−${money(pendingAmt)} to settle` : 'All clear',
+      cls:   pendingSplits.length ? 'negative' : ''
+    },
+    { label: 'Daily limit',  value: money(dailyRemaining), note: `of ${money(dailyLimit)} left today` },
+  ];
+
+  el.innerHTML = cards.map(c => `
+    <div class="home-snap-card">
+      <small>${c.label}</small>
+      <strong class="${c.cls || ''}">${c.value}</strong>
+      <span>${c.note}</span>
+    </div>`).join('');
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -1567,7 +1613,7 @@ function bindEvents() {
       localStorage.setItem("vaultUserId", activeUserId);
       showDashboard();
       render();
-      toast("Welcome back to Vault.");
+      toast("Welcome back to Vault.", "success");
     } catch (error) {
       $("#authMessage").textContent = error.message;
     }
@@ -1585,7 +1631,7 @@ function bindEvents() {
       localStorage.setItem("vaultUserId", activeUserId);
       showDashboard();
       render();
-      toast("Your Vault account is ready.");
+      toast("Your Vault account is ready.", "success");
     } catch (error) {
       $("#authMessage").textContent = error.message;
     }
@@ -1660,7 +1706,7 @@ function bindEvents() {
         await postAction({ type: "sell-metal", metal: _metalType, grams }, `Sold ${grams}g ${_metalType}.`);
       }
       flashClass($("#metalValue"), "metal-updated");
-    } catch (err) { toast(err.message); }
+    } catch (err) { toast(err.message, 'error'); }
   });
 
   /* ── Split ──────────────────────────────────────────────────────────── */
@@ -1710,7 +1756,7 @@ function bindEvents() {
       await postAction({ type: "create-split", name, totalAmount: total, friends: friends.join(","), splitType: _splitType, share, paidByMe: true }, `Split "${name}" created.`);
       $("#createSplitPanel").classList.add("hidden");
       ["splitName","splitAmount","splitFriends"].forEach(id => { const el = $("#" + id); if (el) el.value = ""; });
-    } catch (err) { toast(err.message); }
+    } catch (err) { toast(err.message, 'error'); }
   });
 
   /* Filter tabs */
@@ -1841,7 +1887,7 @@ function bindEvents() {
       await postAction({ type: "add-goal", name, target }, `Goal "${name}" created.`);
       $("#createGoalPanel")?.classList.add("hidden");
       ["goalName","goalTarget"].forEach(id => { const el = $("#" + id); if (el) el.value = ""; });
-    } catch (err) { toast(err.message); }
+    } catch (err) { toast(err.message, 'error'); }
   });
 
   /* Goal contribute/edit/delete - delegated on #goals */
@@ -1884,7 +1930,7 @@ function bindEvents() {
       await postAction({ type: "add-budget", name, limit }, `Budget "${name}" added.`);
       $("#createBudgetPanel")?.classList.add("hidden");
       ["budgetName","budgetLimit"].forEach(id => { const el = $("#" + id); if (el) el.value = ""; });
-    } catch (err) { toast(err.message); }
+    } catch (err) { toast(err.message, 'error'); }
   });
 
   $("#budgets")?.addEventListener("click", e => {
@@ -1913,6 +1959,12 @@ function bindEvents() {
     }
   });
 
+  /* ── Transaction search ─────────────────────────────────────────────── */
+  $("#txSearch")?.addEventListener("input", e => {
+    _txSearch = e.target.value;
+    if (state) renderTxList();
+  });
+
   /* ── Card: edit limit / change PIN ──────────────────────────────────── */
   $("#saveLimitBtn")?.addEventListener("click", () => {
     const limit = Number($("#newDailyLimit")?.value || 0);
@@ -1929,7 +1981,7 @@ function bindEvents() {
     try {
       await postAction({ type: "change-pin", currentPin, newPin }, "PIN changed successfully.");
       ["currentPinInput","newPinInput"].forEach(id => { const el = $("#" + id); if (el) el.value = ""; });
-    } catch (err) { toast(err.message); }
+    } catch (err) { toast(err.message, 'error'); }
   });
 
   /* Timed PIN/CVV hide - override existing reveal button listeners */
@@ -1966,7 +2018,7 @@ function bindEvents() {
       const note = $("#profileNote");
       if (note) note.textContent = "Changes saved.";
       ["profileName","profileEmail"].forEach(id => { const el = $("#" + id); if (el) el.value = ""; });
-    } catch (err) { toast(err.message); }
+    } catch (err) { toast(err.message, 'error'); }
   });
 
   /* ── Transfer: delete saved recipient ───────────────────────────────── */
@@ -2025,7 +2077,7 @@ function bindEvents() {
       _liveMarketPrices = JSON.parse(JSON.stringify(state.marketPrices || {}));
       renderInvest();
       toast("Prices refreshed.");
-    } catch (err) { toast(err.message); }
+    } catch (err) { toast(err.message, 'error'); }
   });
 
   /* ── Invest: buy / sell / watchlist buttons (delegated) ─────────────── */
@@ -2124,7 +2176,7 @@ function bindEvents() {
       document.getElementById("investTradeOverlay")?.classList.add("hidden");
       _liveMarketPrices = JSON.parse(JSON.stringify(state.marketPrices || {}));
       _investTradePending = null;
-    } catch (err) { toast(err.message); }
+    } catch (err) { toast(err.message, 'error'); }
   });
 
   /* Start live ticker when Invest tab becomes active */

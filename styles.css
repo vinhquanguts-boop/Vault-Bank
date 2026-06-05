@@ -34,6 +34,12 @@
   --font-ui: Inter, "Segoe UI", Arial, Helvetica, sans-serif;
   --font-brand: var(--font-ui);
   --font-numeric: var(--font-ui);
+  /* Motion system */
+  --ease-soft: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast: 140ms;
+  --duration-page: 280ms;
+  --duration-state: 200ms;
   color-scheme: light;
   font-family: var(--font-ui);
 }
@@ -6656,3 +6662,265 @@ code,
 /* Positive / negative helpers (reused from existing) */
 .positive { color: var(--success); }
 .negative { color: var(--danger); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   TOAST TYPE SYSTEM
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.toast { font-size: 0.88rem; font-weight: 600; letter-spacing: 0.01em; }
+
+.toast.toast-success {
+  background: linear-gradient(135deg, #1e7a52, #2bc985);
+  box-shadow: 0 16px 40px rgba(43, 201, 133, 0.28);
+}
+
+.toast.toast-error {
+  background: linear-gradient(135deg, #8a1c2e, var(--danger));
+  box-shadow: 0 16px 40px rgba(216, 82, 107, 0.28);
+}
+
+.toast.toast-warning {
+  background: linear-gradient(135deg, #7a5500, #c8890a);
+  color: #fff8e8;
+  box-shadow: 0 16px 40px rgba(200, 137, 10, 0.26);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   HOME TAB — ACCOUNT SNAPSHOT
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.home-snapshot-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.home-snap-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 14px 16px;
+  border: 1px solid rgba(219, 168, 160, 0.36);
+  border-radius: 14px;
+  background: rgba(255, 247, 241, 0.82);
+  transition: transform var(--duration-state) var(--ease-soft),
+              background var(--duration-state) var(--ease-soft),
+              box-shadow var(--duration-state) var(--ease-soft);
+}
+
+.home-snap-card:hover {
+  transform: translateY(-3px);
+  background: rgba(255, 247, 241, 0.98);
+  box-shadow: 0 16px 36px rgba(92, 46, 56, 0.11);
+}
+
+.home-snap-card small {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(92, 46, 56, 0.50);
+}
+
+.home-snap-card strong {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--rose-900);
+  line-height: 1.2;
+}
+
+.home-snap-card span {
+  font-size: 0.72rem;
+  color: rgba(92, 46, 56, 0.50);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SPEND TAB — TRANSACTION SEARCH
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.tx-search-wrap {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.tx-search-wrap input {
+  padding-left: 38px;
+}
+
+.tx-search-wrap::before {
+  content: "⌕";
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.1rem;
+  color: rgba(92, 46, 56, 0.36);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   TAB TRANSITIONS — upgraded with motion variables
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.tab-view.active {
+  animation: tabReveal var(--duration-page) var(--ease-soft) both;
+}
+
+@keyframes tabReveal {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Active nav indicator subtle movement */
+.app-nav button {
+  transition: background var(--duration-fast) var(--ease-soft),
+              color var(--duration-fast) var(--ease-soft),
+              transform var(--duration-fast) var(--ease-spring);
+}
+
+.app-nav button.active {
+  transform: translateX(5px);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE / TABLET RESPONSIVE LAYOUT
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 900px) {
+  .app-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .sidebar {
+    position: sticky;
+    top: 0;
+    height: auto;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 16px;
+    border-right: none;
+    border-bottom: 1px solid rgba(107, 47, 59, 0.12);
+    z-index: 100;
+  }
+
+  .sidebar .brand.compact {
+    display: none;
+  }
+
+  .app-nav {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px;
+    flex: 1;
+  }
+
+  .app-nav button {
+    min-height: 36px;
+    padding: 0 10px;
+    font-size: 0.78rem;
+  }
+
+  .app-nav button:hover,
+  .app-nav button.active {
+    transform: none;
+  }
+
+  .sidebar > .button.soft.wide {
+    display: none;
+  }
+
+  .workspace {
+    padding: clamp(14px, 3vw, 28px);
+    min-height: calc(100vh - 60px);
+  }
+
+  .home-snapshot-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .two-col,
+  .card-workbench {
+    grid-template-columns: 1fr;
+  }
+
+  .budget-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .section-heading h2 {
+    font-size: clamp(1.6rem, 5vw, 2.4rem);
+  }
+
+  .workspace-header h1 {
+    font-size: clamp(1.4rem, 4vw, 2rem);
+  }
+}
+
+@media (max-width: 560px) {
+  .home-snapshot-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .budget-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .invest-controls-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .chart-type-pills {
+    flex-wrap: wrap;
+  }
+
+  .hero-dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  .money {
+    font-size: clamp(2rem, 8vw, 4rem);
+  }
+
+  .invest-summary-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: grid;
+  }
+}
+
+/* prefers-reduced-motion for app UI animations */
+@media (prefers-reduced-motion: reduce) {
+  .tab-view.active,
+  .dashboard-reveal .workspace-header,
+  .dashboard-reveal .hero-dashboard,
+  .dashboard-reveal .metrics .metric,
+  .dashboard-reveal .two-col > *,
+  .dashboard-reveal .budget-grid > *,
+  .dashboard-reveal .goal-list > * {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+
+  .home-snap-card,
+  .list-row,
+  .metric,
+  .panel,
+  .budget-card,
+  .goal-card {
+    transition: none !important;
+  }
+}

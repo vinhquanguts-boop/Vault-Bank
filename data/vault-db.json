@@ -8,8 +8,8 @@
       "avatar": "S",
       "balance": 16032.05,
       "monthlyIncome": 8686,
-      "spent": 4000,
-      "saved": 850,
+      "spent": 321.54,
+      "saved": 60.33,
       "trustScore": 78,
       "createdAt": "2026-05-20T00:00:00.000Z"
     }
@@ -161,8 +161,8 @@
     }
   },
   "settings": {
-    "goldAud": 3318.2,
-    "silverAud": 38.4,
+    "goldAud": 3318.39,
+    "silverAud": 38.5,
     "metalFee": 0.99,
     "metalBuySpreadPct": 0.75,
     "metalSellSpreadPct": 0.5,
@@ -224,19 +224,31 @@
   },
   "marketPrices": {
     "gold": {
-      "aud": 3318.2
+      "aud": 3318.39
     },
     "silver": {
-      "aud": 38.4
+      "aud": 38.5
     },
     "BTC": {
-      "aud": 158000
+      "aud": 158051.31
     },
     "ETH": {
-      "aud": 5600
+      "aud": 5601.63
     }
   },
   "actions": [
+    {
+      "id": "a_95c677e8d2",
+      "action": "invest",
+      "detail": "sarah@vault.au refreshed market prices",
+      "at": "2026-06-05T10:29:15.833Z"
+    },
+    {
+      "id": "a_65a7a5d16e",
+      "action": "login",
+      "detail": "sarah@vault.au signed in",
+      "at": "2026-06-05T10:28:18.026Z"
+    },
     {
       "id": "a_3f30c0b0e2",
       "action": "login",
