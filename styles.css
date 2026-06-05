@@ -6390,3 +6390,269 @@ code,
    ══════════════════════════════════════════════════════════════════════════ */
 
 .button.small { padding: 6px 13px; font-size: 0.78rem; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   INVEST TAB
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Portfolio summary row */
+.invest-summary-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.invest-stat {
+  flex: 1;
+  min-width: 120px;
+  background: var(--ivory);
+  border: 1px solid rgba(219, 168, 160, 0.30);
+  border-radius: 14px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.invest-stat small {
+  font-size: 0.70rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(92, 46, 56, 0.54);
+}
+
+.invest-stat strong {
+  font-size: 1.10rem;
+  font-weight: 700;
+  color: var(--rose-900);
+  line-height: 1.2;
+}
+
+/* Risk badge */
+.invest-risk-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.invest-risk-badge.risk-low  { background: rgba(43, 201, 133, 0.15); color: #1a8b59; }
+.invest-risk-badge.risk-med  { background: rgba(232, 201, 160, 0.40); color: #7a5a20; }
+.invest-risk-badge.risk-high { background: rgba(216, 82, 107, 0.15);  color: #a02840; }
+
+/* Controls row */
+.invest-controls-row {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+/* Scrollable asset selector */
+.invest-scroll-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  flex: 1;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.invest-scroll-tabs::-webkit-scrollbar { display: none; }
+
+.invest-scroll-tabs button {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(219, 168, 160, 0.34);
+  background: rgba(255, 247, 241, 0.70);
+  color: rgba(92, 46, 56, 0.60);
+  font-size: 0.80rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms, color 150ms, border-color 150ms;
+  white-space: nowrap;
+}
+
+.invest-scroll-tabs button.active,
+.invest-scroll-tabs button:hover {
+  background: var(--rose-900);
+  border-color: transparent;
+  color: var(--ivory);
+}
+
+/* Chart type pills */
+.chart-type-pills {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.chart-type-pills button {
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(219, 168, 160, 0.34);
+  background: transparent;
+  color: rgba(92, 46, 56, 0.55);
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 140ms, color 140ms;
+  white-space: nowrap;
+}
+
+.chart-type-pills button.active {
+  background: var(--rose-800);
+  border-color: transparent;
+  color: var(--ivory);
+}
+
+/* Time range tabs */
+.invest-time-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.invest-time-tabs button {
+  padding: 5px 13px;
+  border-radius: 999px;
+  border: 1px solid rgba(219, 168, 160, 0.28);
+  background: transparent;
+  color: rgba(92, 46, 56, 0.52);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 140ms, color 140ms;
+}
+
+.invest-time-tabs button.active {
+  background: var(--rose-100);
+  border-color: var(--rose-300);
+  color: var(--rose-800);
+}
+
+/* Chart container */
+.invest-chart-wrap {
+  margin-bottom: 20px;
+  padding: 20px;
+  min-height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.invest-chart-wrap canvas {
+  max-height: 300px;
+  width: 100% !important;
+}
+
+/* Holdings + detail two-column */
+.invest-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 4px;
+}
+
+@media (max-width: 800px) {
+  .invest-two-col { grid-template-columns: 1fr; }
+}
+
+/* Individual holding row in list */
+.invest-holding-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 6px;
+  border-bottom: 1px solid rgba(219, 168, 160, 0.18);
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 120ms;
+}
+
+.invest-holding-row:last-child { border-bottom: none; }
+.invest-holding-row:hover { background: rgba(255, 226, 214, 0.30); }
+
+.invest-hold-sym {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+
+.gold-sym   { background: rgba(232, 201, 160, 0.40); color: #7a5a20; }
+.silver-sym { background: rgba(176, 190, 197, 0.35); color: #4a6572; }
+.crypto-sym { background: rgba(156, 98, 112, 0.15);  color: var(--rose-700); }
+
+.invest-hold-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.invest-hold-info strong { font-size: 0.88rem; font-weight: 700; color: var(--rose-900); }
+.invest-hold-info small  { font-size: 0.74rem; color: rgba(92,46,56,0.55); }
+
+.invest-hold-value {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.invest-hold-value strong { font-size: 0.88rem; font-weight: 700; color: var(--rose-900); }
+.invest-hold-value small  { font-size: 0.74rem; }
+
+/* Asset detail panel */
+.invest-detail-panel h3 {
+  font-size: 1.0rem;
+  margin: 0 0 12px 0;
+  color: var(--rose-900);
+}
+
+.invest-detail-dl { display: flex; flex-direction: column; gap: 0; margin: 0; padding: 0; }
+
+.invest-dl-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(219, 168, 160, 0.16);
+  font-size: 0.86rem;
+}
+
+.invest-dl-row:last-child { border-bottom: none; }
+.invest-dl-row dt { color: rgba(92, 46, 56, 0.58); font-weight: 500; }
+.invest-dl-row dd { font-weight: 700; color: var(--rose-900); margin: 0; }
+
+/* Buy/sell action row inside detail panel */
+.invest-action-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(219, 168, 160, 0.20);
+}
+
+/* Invest trade overlay */
+#investTradeOverlay .overlay-card {
+  max-width: 400px;
+}
+
+/* Positive / negative helpers (reused from existing) */
+.positive { color: var(--success); }
+.negative { color: var(--danger); }

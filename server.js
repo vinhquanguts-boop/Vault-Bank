@@ -88,7 +88,9 @@ function userState(db, userId) {
     transactions: db.transactions[userId] || [],
     card: db.cards[userId],
     settings: db.settings,
-    recipients: (db.recipients || {})[userId] || []
+    recipients: (db.recipients || {})[userId] || [],
+    investments: (db.investments || {})[userId] || { crypto: [], history: [] },
+    marketPrices: db.marketPrices || {}
   };
 }
 
@@ -204,6 +206,8 @@ async function api(req, res) {
     db.recipients[userId] = [];
     db.transferReceipts ||= {};
     db.transferReceipts[userId] = [];
+    db.investments ||= {};
+    db.investments[userId] = { crypto: [], history: [] };
     logAction(db, "signup", `${email} created an account`);
     writeDb(db);
     return json(res, 200, userState(db, userId));
@@ -224,6 +228,11 @@ async function api(req, res) {
     db.savings[user.id].goals ||= [];
     db.metals[user.id] ||= { gold: 0, silver: 0 };
     db.budgets[user.id] ||= [];
+    db.investments ||= {};
+    db.investments[user.id] ||= { crypto: [], history: [] };
+    db.investments[user.id].crypto ||= [];
+    db.investments[user.id].history ||= [];
+    db.marketPrices ||= { gold: { aud: 3318.2 }, silver: { aud: 38.4 }, BTC: { aud: 158000 }, ETH: { aud: 5600 } };
 
     /* ── Savings: deposit ─────────────────────────────────────────────── */
     if (body.type === "transfer-savings") {
@@ -500,6 +509,90 @@ async function api(req, res) {
       if (idx !== -1) db.recipients[user.id].splice(idx, 1);
     }
 
+    /* ── Investments: buy ─────────────────────────────────────────────── */
+    if (body.type === "buy-investment") {
+      const symbol = String(body.symbol || "").toUpperCase();
+      const name   = String(body.name || symbol);
+      const audAmount = Number(body.audAmount || 0);
+      const currentPrice = (db.marketPrices[symbol] || {}).aud || 0;
+      if (!symbol)          return json(res, 400, { error: "Asset symbol is required." });
+      if (audAmount <= 0)   return json(res, 400, { error: "Enter a valid AUD amount." });
+      if (!currentPrice)    return json(res, 400, { error: "Price data unavailable for that asset." });
+      if (audAmount > user.balance) return json(res, 400, { error: `Insufficient balance. You have ${money(user.balance)}.` });
+      const quantity = Number((audAmount / currentPrice).toFixed(8));
+      const existing = db.investments[user.id].crypto.find(c => c.symbol === symbol);
+      if (existing) {
+        const totalQty = existing.quantity + quantity;
+        existing.averageBuyPrice = ((existing.averageBuyPrice * existing.quantity) + (currentPrice * quantity)) / totalQty;
+        existing.quantity = Number(totalQty.toFixed(8));
+      } else {
+        db.investments[user.id].crypto.push({ symbol, name, quantity, averageBuyPrice: currentPrice, watchlist: false });
+      }
+      db.investments[user.id].history.unshift({ id: genId("ih"), asset: symbol, type: "buy", quantity, price: currentPrice, date: new Date().toISOString().slice(0, 10) });
+      user.balance = Number((user.balance - audAmount).toFixed(2));
+      addTransaction(db, user.id, `Bought ${quantity.toFixed(6)} ${symbol}`, "Investment", -audAmount, "expense");
+      logAction(db, "invest", `${user.email} bought ${quantity.toFixed(6)} ${symbol} for ${money(audAmount)}`);
+    }
+
+    /* ── Investments: sell ────────────────────────────────────────────── */
+    if (body.type === "sell-investment") {
+      const symbol = String(body.symbol || "").toUpperCase();
+      const quantity = Number(body.quantity || 0);
+      const currentPrice = (db.marketPrices[symbol] || {}).aud || 0;
+      const existing = db.investments[user.id].crypto.find(c => c.symbol === symbol);
+      if (!existing)        return json(res, 400, { error: `You do not hold any ${symbol}.` });
+      if (quantity <= 0)    return json(res, 400, { error: "Enter a valid quantity." });
+      if (quantity > existing.quantity) return json(res, 400, { error: `You only hold ${existing.quantity.toFixed(6)} ${symbol}.` });
+      if (!currentPrice)    return json(res, 400, { error: "Price data unavailable." });
+      const proceeds = Number((quantity * currentPrice).toFixed(2));
+      existing.quantity = Number((existing.quantity - quantity).toFixed(8));
+      if (existing.quantity < 0.000001 && !existing.watchlist) {
+        db.investments[user.id].crypto = db.investments[user.id].crypto.filter(c => c.symbol !== symbol);
+      }
+      db.investments[user.id].history.unshift({ id: genId("ih"), asset: symbol, type: "sell", quantity, price: currentPrice, date: new Date().toISOString().slice(0, 10) });
+      user.balance = Number((user.balance + proceeds).toFixed(2));
+      addTransaction(db, user.id, `Sold ${quantity.toFixed(6)} ${symbol}`, "Investment", proceeds, "income");
+      logAction(db, "invest", `${user.email} sold ${quantity.toFixed(6)} ${symbol} for ${money(proceeds)}`);
+    }
+
+    /* ── Investments: watchlist ───────────────────────────────────────── */
+    if (body.type === "add-watchlist") {
+      const symbol = String(body.symbol || "").toUpperCase();
+      const name   = String(body.name || symbol);
+      const currentPrice = (db.marketPrices[symbol] || {}).aud || 0;
+      const existing = db.investments[user.id].crypto.find(c => c.symbol === symbol);
+      if (existing) {
+        existing.watchlist = true;
+      } else {
+        db.investments[user.id].crypto.push({ symbol, name, quantity: 0, averageBuyPrice: currentPrice, watchlist: true });
+      }
+      logAction(db, "invest", `${user.email} added ${symbol} to watchlist`);
+    }
+
+    if (body.type === "remove-watchlist") {
+      const symbol = String(body.symbol || "").toUpperCase();
+      const existing = db.investments[user.id].crypto.find(c => c.symbol === symbol);
+      if (existing) {
+        existing.watchlist = false;
+        if (existing.quantity < 0.000001) {
+          db.investments[user.id].crypto = db.investments[user.id].crypto.filter(c => c.symbol !== symbol);
+        }
+      }
+      logAction(db, "invest", `${user.email} removed ${symbol} from watchlist`);
+    }
+
+    /* ── Market prices: refresh (simulated) ──────────────────────────── */
+    if (body.type === "refresh-market-prices") {
+      Object.keys(db.marketPrices).forEach(key => {
+        const movement = 1 + (Math.random() - 0.5) * 0.01;
+        db.marketPrices[key].aud = Number((db.marketPrices[key].aud * movement).toFixed(2));
+      });
+      /* Keep metals in sync with settings */
+      db.settings.goldAud   = db.marketPrices.gold?.aud   || db.settings.goldAud;
+      db.settings.silverAud = db.marketPrices.silver?.aud || db.settings.silverAud;
+      logAction(db, "invest", `${user.email} refreshed market prices`);
+    }
+
     updateSpendTotals(db, user.id);
     writeDb(db);
     return json(res, 200, userState(db, user.id));
@@ -606,6 +699,21 @@ async function api(req, res) {
         ]
       };
       db.cards["u1"] = { holder: "Sarah Chen", last4: "8821", pin: "4821", cvv: "482", dailyLimit: 5000, frozen: false, status: "Active" };
+      db.investments ||= {};
+      db.investments["u1"] = {
+        crypto: [
+          { symbol: "BTC", name: "Bitcoin",  quantity: 0.018, averageBuyPrice: 98000, watchlist: true  },
+          { symbol: "ETH", name: "Ethereum", quantity: 0.5,   averageBuyPrice: 5200,  watchlist: false }
+        ],
+        history: [
+          { id: "ih1", asset: "BTC", type: "buy", quantity: 0.005, price: 96000, date: "2026-06-01" },
+          { id: "ih2", asset: "BTC", type: "buy", quantity: 0.013, price: 98500, date: "2026-06-03" },
+          { id: "ih3", asset: "ETH", type: "buy", quantity: 0.5,   price: 5200,  date: "2026-06-02" }
+        ]
+      };
+      db.marketPrices = { gold: { aud: 3318.2 }, silver: { aud: 38.4 }, BTC: { aud: 158000 }, ETH: { aud: 5600 } };
+      db.settings.goldAud   = 3318.2;
+      db.settings.silverAud = 38.4;
       logAction(db, "admin", "Demo data reset to factory defaults");
     }
 
@@ -620,6 +728,7 @@ function staticFile(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);
   let filePath = decodeURIComponent(url.pathname);
   if (filePath === "/") filePath = "/index.html";
+  if (filePath === "/favicon.ico") filePath = "/assets/logo2.png";
   const fullPath = path.normalize(path.join(ROOT, filePath));
   if (!fullPath.startsWith(ROOT)) return send(res, 403, "Forbidden", "text/plain");
   fs.readFile(fullPath, (error, data) => {

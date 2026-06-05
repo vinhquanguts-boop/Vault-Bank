@@ -62,19 +62,22 @@
           "id": "g1",
           "name": "Emergency fund",
           "current": 2440,
-          "target": 5000
+          "target": 5000,
+          "createdAt": "2026-05-20T00:00:00.000Z"
         },
         {
           "id": "g2",
           "name": "Japan trip",
           "current": 1780,
-          "target": 4200
+          "target": 4200,
+          "createdAt": "2026-05-20T00:00:00.000Z"
         },
         {
           "id": "g3",
           "name": "New laptop",
           "current": 620,
-          "target": 2100
+          "target": 2100,
+          "createdAt": "2026-05-20T00:00:00.000Z"
         }
       ]
     }
@@ -138,7 +141,7 @@
       },
       {
         "id": "t4",
-        "title": "Auto save",
+        "title": "Auto-save",
         "category": "Savings",
         "amount": -50,
         "type": "transfer",
@@ -161,8 +164,77 @@
     "goldAud": 3318.2,
     "silverAud": 38.4,
     "metalFee": 0.99,
+    "metalBuySpreadPct": 0.75,
+    "metalSellSpreadPct": 0.5,
+    "dailyTransferLimit": 5000,
     "bankName": "VAULT Bank",
     "tagline": "Spend smarter. Save calmer. Grow with confidence."
+  },
+  "recipients": {
+    "u1": []
+  },
+  "transferReceipts": {
+    "u1": []
+  },
+  "investments": {
+    "u1": {
+      "crypto": [
+        {
+          "symbol": "BTC",
+          "name": "Bitcoin",
+          "quantity": 0.018,
+          "averageBuyPrice": 98000,
+          "watchlist": true
+        },
+        {
+          "symbol": "ETH",
+          "name": "Ethereum",
+          "quantity": 0.5,
+          "averageBuyPrice": 5200,
+          "watchlist": false
+        }
+      ],
+      "history": [
+        {
+          "id": "ih1",
+          "asset": "BTC",
+          "type": "buy",
+          "quantity": 0.005,
+          "price": 96000,
+          "date": "2026-06-01"
+        },
+        {
+          "id": "ih2",
+          "asset": "BTC",
+          "type": "buy",
+          "quantity": 0.013,
+          "price": 98500,
+          "date": "2026-06-03"
+        },
+        {
+          "id": "ih3",
+          "asset": "ETH",
+          "type": "buy",
+          "quantity": 0.5,
+          "price": 5200,
+          "date": "2026-06-02"
+        }
+      ]
+    }
+  },
+  "marketPrices": {
+    "gold": {
+      "aud": 3318.2
+    },
+    "silver": {
+      "aud": 38.4
+    },
+    "BTC": {
+      "aud": 158000
+    },
+    "ETH": {
+      "aud": 5600
+    }
   },
   "actions": [
     {
@@ -176,48 +248,6 @@
       "action": "login",
       "detail": "sarah@vault.au signed in",
       "at": "2026-06-05T03:43:39.078Z"
-    },
-    {
-      "id": "a_1593d2afb0",
-      "action": "login",
-      "detail": "sarah@vault.au signed in",
-      "at": "2026-06-05T03:25:47.116Z"
-    },
-    {
-      "id": "a_6ae928dcbc",
-      "action": "login",
-      "detail": "sarah@vault.au signed in",
-      "at": "2026-06-05T03:16:25.635Z"
-    },
-    {
-      "id": "a_6761b2e28f",
-      "action": "login",
-      "detail": "sarah@vault.au signed in",
-      "at": "2026-06-05T03:14:48.168Z"
-    },
-    {
-      "id": "a_5894180e10",
-      "action": "login",
-      "detail": "sarah@vault.au signed in",
-      "at": "2026-06-05T03:11:24.244Z"
-    },
-    {
-      "id": "a_110deb02c6",
-      "action": "login",
-      "detail": "sarah@vault.au signed in",
-      "at": "2026-06-05T03:08:05.890Z"
-    },
-    {
-      "id": "a_479a92b2e3",
-      "action": "login",
-      "detail": "sarah@vault.au signed in",
-      "at": "2026-06-04T01:33:37.955Z"
-    },
-    {
-      "id": "a_1997ad9ab1",
-      "action": "login",
-      "detail": "sarah@vault.au signed in",
-      "at": "2026-06-04T01:15:27.165Z"
     },
     {
       "id": "a_1dc5737e54",

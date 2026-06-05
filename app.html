@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>VAULT App Demo</title>
+    <link rel="icon" href="assets/logo2.png" />
     <link rel="stylesheet" href="styles.css?v=20260605-app-clarity" />
   </head>
   <body class="app-page">
@@ -26,6 +27,7 @@
           <button data-tab="metals">Metals</button>
           <button data-tab="split">Split</button>
           <button data-tab="transfer">Transfer</button>
+          <button data-tab="invest">Invest</button>
           <button data-tab="card">Card</button>
           <button data-tab="profile">Profile</button>
         </nav>
@@ -352,8 +354,8 @@
                 <div class="card-extra-section">
                   <h4>Change PIN</h4>
                   <div class="split-form">
-                    <label class="app-label">Current PIN <input id="currentPinInput" type="password" maxlength="4" placeholder="••••" /></label>
-                    <label class="app-label">New PIN <input id="newPinInput" type="password" maxlength="4" placeholder="••••" /></label>
+                    <label class="app-label">Current PIN <input id="currentPinInput" type="text" inputmode="numeric" maxlength="4" placeholder="0000" autocomplete="off" /></label>
+                    <label class="app-label">New PIN <input id="newPinInput" type="text" inputmode="numeric" maxlength="4" placeholder="0000" autocomplete="off" /></label>
                   </div>
                   <button class="button soft" id="changePinBtn" style="margin-top:10px">Change PIN</button>
                 </div>
@@ -365,6 +367,90 @@
               <p>Recent purchases and ATM activity on this card.</p>
             </div>
             <div class="list" id="cardTxList"></div>
+          </section>
+
+          <!-- ══ INVEST TAB ══════════════════════════════════════════════ -->
+          <section class="tab-view" id="tab-invest">
+            <div class="section-heading">
+              <h2>Invest</h2>
+              <p>Track your crypto and metals portfolio. Buy and sell at live prices.</p>
+              <button class="button soft small" id="refreshPricesBtn" style="margin-top:14px">Refresh prices</button>
+            </div>
+
+            <!-- Portfolio summary row -->
+            <div class="invest-summary-row">
+              <div class="invest-stat">
+                <small>Total invested</small>
+                <strong id="investTotal">$0.00</strong>
+              </div>
+              <div class="invest-stat">
+                <small>Today change</small>
+                <strong id="investChange">+$0.00</strong>
+              </div>
+              <div class="invest-stat">
+                <small>Total gain / loss</small>
+                <strong id="investGainLoss">+$0.00</strong>
+              </div>
+              <div class="invest-stat">
+                <small>Cash balance</small>
+                <strong id="investCash">$0.00</strong>
+              </div>
+              <div class="invest-stat">
+                <small>Risk level</small>
+                <span id="investRisk" class="invest-risk-badge">-</span>
+              </div>
+            </div>
+
+            <!-- Asset selector + chart type -->
+            <div class="invest-controls-row">
+              <div class="invest-scroll-tabs" id="assetSelector">
+                <button class="active" data-invest-asset="portfolio">All</button>
+                <button data-invest-asset="metals">Metals</button>
+                <button data-invest-asset="crypto">Crypto</button>
+                <button data-invest-asset="BTC">Bitcoin</button>
+                <button data-invest-asset="ETH">Ethereum</button>
+                <button data-invest-asset="gold">Gold</button>
+                <button data-invest-asset="silver">Silver</button>
+                <button data-invest-asset="watchlist">Watchlist</button>
+              </div>
+              <div class="chart-type-pills" id="chartTypeSelector">
+                <button class="active" data-chart-type="line" title="Line chart">Line</button>
+                <button data-chart-type="area" title="Area chart">Area</button>
+                <button data-chart-type="donut" title="Allocation">Donut</button>
+                <button data-chart-type="bar" title="Activity">Bar</button>
+                <button data-chart-type="compare" title="Compare assets">Compare</button>
+              </div>
+            </div>
+
+            <!-- Time range tabs -->
+            <div class="invest-time-tabs" id="timeRangeTabs">
+              <button data-range="1D">1D</button>
+              <button data-range="1W">1W</button>
+              <button class="active" data-range="1M">1M</button>
+              <button data-range="3M">3M</button>
+              <button data-range="1Y">1Y</button>
+              <button data-range="all">All</button>
+            </div>
+
+            <!-- Chart canvas -->
+            <div class="invest-chart-wrap panel">
+              <canvas id="investChart"></canvas>
+            </div>
+
+            <!-- Holdings list + asset detail -->
+            <div class="invest-two-col">
+              <section class="panel">
+                <h3>Holdings</h3>
+                <div id="investHoldingsList"></div>
+              </section>
+              <section class="panel invest-detail-panel" id="assetDetailPanel">
+                <h3 id="assetDetailName">Select an asset</h3>
+                <dl class="invest-detail-dl" id="investDetailDl">
+                  <div class="empty-state" style="margin:0">Click any holding or asset to see details.</div>
+                </dl>
+                <div class="invest-action-row" id="investActionRow"></div>
+              </section>
+            </div>
           </section>
 
           <section class="tab-view" id="tab-profile">
@@ -408,6 +494,32 @@
       </main>
     </div>
 
+    <!-- Invest buy/sell overlay -->
+    <div class="app-overlay hidden" id="investTradeOverlay">
+      <div class="overlay-card">
+        <h3 id="investTradeTitle">Buy BTC</h3>
+        <p class="form-note" id="investTradePrice"></p>
+        <div class="split-form" style="margin-top:14px">
+          <div id="investBuySection">
+            <label class="app-label">AUD amount
+              <div class="prefix-input"><span>$</span><input id="investTradeAmt" type="number" placeholder="100" step="1" min="1" /></div>
+            </label>
+            <p class="form-note" id="investTradeEstimate" style="margin-top:8px"></p>
+          </div>
+          <div id="investSellSection" class="hidden">
+            <label class="app-label">Quantity to sell
+              <input id="investSellQty" type="number" placeholder="0.001" step="0.000001" min="0.000001" />
+            </label>
+            <p class="form-note" id="investSellEstimate" style="margin-top:8px"></p>
+          </div>
+        </div>
+        <div class="overlay-actions" style="margin-top:18px">
+          <button class="button soft" id="investTradeCancelBtn">Cancel</button>
+          <button class="button primary" id="investTradeConfirmBtn">Confirm</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Transfer review overlay -->
     <div class="app-overlay hidden" id="transferReviewOverlay">
       <div class="overlay-card">
@@ -437,6 +549,7 @@
     </div>
 
     <div class="toast" id="toast" role="status"></div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <script src="vault-intro.js"></script>
     <script src="app.js"></script>
   </body>

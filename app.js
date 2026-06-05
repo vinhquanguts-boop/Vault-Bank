@@ -482,6 +482,15 @@ let _txFilter        = 'all';  /* transaction filter in Spend tab */
 let _pinRevealTimer  = null;   /* auto-hide PIN/CVV */
 let _cvvRevealTimer  = null;
 
+/* Invest tab state */
+let _investAsset       = 'portfolio';
+let _investChartType   = 'line';
+let _investTimeRange   = '1M';
+let _investChart       = null;          /* Chart.js instance */
+let _liveMarketPrices  = null;          /* client-side live prices */
+let _liveTickTimer     = null;          /* price tick interval */
+let _investTradePending = null;         /* { symbol, name, mode: 'buy'|'sell' } */
+
 function render() {
   if (!state) return;
   const { user } = state;
@@ -509,6 +518,7 @@ function render() {
   renderTransfer();
   renderProfile();
   renderSecurityLog();
+  renderInvest();
 }
 
 function renderMetrics() {
@@ -816,6 +826,525 @@ function renderProfile() {
   const profileEmail = $("#profileEmail");
   if (profileName && !profileName.value) profileName.placeholder = state.user.name;
   if (profileEmail && !profileEmail.value) profileEmail.placeholder = state.user.email;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   INVEST TAB
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Seeded pseudo-random number generator for deterministic chart data */
+function seededRand(seed) {
+  let s = seed >>> 0;
+  return function () {
+    s = Math.imul(1664525, s) + 1013904223 >>> 0;
+    return s / 0xFFFFFFFF;
+  };
+}
+
+/* Generate a price walk from startPrice toward endPrice with noise */
+function genPriceHistory(startPrice, endPrice, points, volatility, seed) {
+  const rand = seededRand(seed || 12345);
+  const data = [];
+  let price = startPrice;
+  const drift = (endPrice - startPrice) / points;
+  for (let i = 0; i < points; i++) {
+    price += drift + (rand() - 0.5) * price * volatility;
+    data.push(Math.max(0.01, price));
+  }
+  return data;
+}
+
+/* Build date/time labels for a given time range and point count */
+function buildChartLabels(range, points) {
+  const now = new Date();
+  const labels = [];
+  if (range === '1D') {
+    for (let i = points - 1; i >= 0; i--) {
+      const d = new Date(now - i * 60 * 60 * 1000);
+      labels.push(d.getHours().toString().padStart(2, '0') + ':00');
+    }
+  } else if (range === '1W') {
+    const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    for (let i = points - 1; i >= 0; i--) {
+      const d = new Date(now - i * 24 * 60 * 60 * 1000);
+      labels.push(days[d.getDay()]);
+    }
+  } else if (range === '1M') {
+    for (let i = points - 1; i >= 0; i--) {
+      const d = new Date(now - i * 24 * 60 * 60 * 1000);
+      labels.push(`${d.toLocaleString('default', { month: 'short' })} ${d.getDate()}`);
+    }
+  } else if (range === '3M') {
+    for (let i = points - 1; i >= 0; i--) {
+      const d = new Date(now - i * 7 * 24 * 60 * 60 * 1000);
+      labels.push(`${d.toLocaleString('default', { month: 'short' })} ${d.getDate()}`);
+    }
+  } else if (range === '1Y') {
+    for (let i = points - 1; i >= 0; i--) {
+      const d = new Date(now);
+      d.setMonth(d.getMonth() - i);
+      labels.push(d.toLocaleString('default', { month: 'short' }));
+    }
+  } else {
+    for (let i = points - 1; i >= 0; i--) {
+      const d = new Date(now);
+      d.setMonth(d.getMonth() - i * 2);
+      labels.push(`${d.toLocaleString('default', { month: 'short' })} '${String(d.getFullYear()).slice(2)}`);
+    }
+  }
+  return labels;
+}
+
+/* Map time range to { points, volatility } per asset type */
+const RANGE_CONFIG = {
+  '1D':  { points: 24,  vol: { high: 0.004, med: 0.003, low: 0.001 } },
+  '1W':  { points: 7,   vol: { high: 0.025, med: 0.018, low: 0.005 } },
+  '1M':  { points: 30,  vol: { high: 0.020, med: 0.015, low: 0.004 } },
+  '3M':  { points: 12,  vol: { high: 0.030, med: 0.022, low: 0.007 } },
+  '1Y':  { points: 12,  vol: { high: 0.060, med: 0.040, low: 0.015 } },
+  'all': { points: 24,  vol: { high: 0.080, med: 0.060, low: 0.025 } }
+};
+
+/* Current live price for any asset symbol */
+function livePrice(symbol) {
+  if (!_liveMarketPrices) _liveMarketPrices = { ...((state && state.marketPrices) || {}) };
+  const lc = symbol.toLowerCase();
+  if (lc === 'gold')   return _liveMarketPrices.gold?.aud   || (state?.settings?.goldAud   || 3318.2);
+  if (lc === 'silver') return _liveMarketPrices.silver?.aud || (state?.settings?.silverAud || 38.4);
+  return _liveMarketPrices[symbol]?.aud || 0;
+}
+
+/* Build historical start price: avg buy price or a rough estimate */
+function historyStartPrice(symbol, currentPrice, range) {
+  const inv = state?.investments?.crypto || [];
+  const holding = inv.find(c => c.symbol === symbol.toUpperCase());
+  if (holding && holding.averageBuyPrice && holding.averageBuyPrice < currentPrice) {
+    const ranges = ['1D','1W','1M','3M','1Y','all'];
+    const ratios  = [0.99, 0.97, 0.93, 0.88, 0.75, 0.65];
+    const factor  = ratios[ranges.indexOf(range)] ?? 0.85;
+    return holding.averageBuyPrice * (currentPrice / (holding.averageBuyPrice || currentPrice)) * factor;
+  }
+  const rangeFactor = { '1D':0.99, '1W':0.96, '1M':0.90, '3M':0.84, '1Y':0.70, 'all':0.60 };
+  return currentPrice * (rangeFactor[range] || 0.85);
+}
+
+function renderInvestChart() {
+  const canvas = document.getElementById('investChart');
+  if (!canvas || typeof Chart === 'undefined') return;
+  const cfg = RANGE_CONFIG[_investTimeRange] || RANGE_CONFIG['1M'];
+  const labels = buildChartLabels(_investTimeRange, cfg.points);
+
+  /* Destroy previous chart if it exists */
+  if (_investChart) { _investChart.destroy(); _investChart = null; }
+
+  const roseColor  = '#9c6270';
+  const goldColor  = '#e8c9a0';
+  const blueColor  = '#5b8fa8';
+  const greenColor = '#2bc985';
+  const ctx        = canvas.getContext('2d');
+
+  /* ── Donut: asset allocation ───────────────────────────────────────── */
+  if (_investChartType === 'donut') {
+    const inv     = state.investments || { crypto: [] };
+    const prices  = _liveMarketPrices || {};
+    const goldVal  = state.metals.gold   * (livePrice('gold')   / 31.1035);
+    const silverVal = state.metals.silver * (livePrice('silver') / 31.1035);
+    const cryptoItems = inv.crypto.filter(c => c.quantity > 0);
+    const items = [
+      { label: 'Gold',   value: goldVal,   color: '#e8c9a0' },
+      { label: 'Silver', value: silverVal, color: '#b0bec5' },
+      ...cryptoItems.map((c, i) => ({
+        label: c.name,
+        value: c.quantity * livePrice(c.symbol),
+        color: ['#f2a65a', '#5b8fa8', '#2bc985', '#9c6270'][i % 4]
+      }))
+    ].filter(i => i.value > 0);
+
+    _investChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: items.map(i => i.label),
+        datasets: [{ data: items.map(i => i.value), backgroundColor: items.map(i => i.color), borderWidth: 0, hoverOffset: 8 }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'right', labels: { color: '#5c2e38', font: { family: 'Inter' } } },
+          tooltip: { callbacks: { label: ctx => ` ${money(ctx.raw)} (${((ctx.raw / items.reduce((s,i) => s+i.value,0))*100).toFixed(1)}%)` } }
+        }
+      }
+    });
+    return;
+  }
+
+  /* ── Bar: monthly buy/sell activity ───────────────────────────────── */
+  if (_investChartType === 'bar') {
+    const hist = (state.investments?.history || []).slice(0, 20);
+    const months = {};
+    hist.forEach(h => {
+      const m = (h.date || '').slice(0, 7);
+      if (!m) return;
+      months[m] ||= { buy: 0, sell: 0 };
+      const val = h.quantity * h.price;
+      if (h.type === 'buy')  months[m].buy  += val;
+      if (h.type === 'sell') months[m].sell += val;
+    });
+    const sortedMonths = Object.keys(months).sort();
+    const barLabels = sortedMonths.map(m => { const d = new Date(m+'-01'); return d.toLocaleString('default',{month:'short', year:'2-digit'}); });
+    _investChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: barLabels.length ? barLabels : ['No activity'],
+        datasets: [
+          { label: 'Bought', data: sortedMonths.map(m => months[m].buy),  backgroundColor: greenColor, borderRadius: 6 },
+          { label: 'Sold',   data: sortedMonths.map(m => months[m].sell), backgroundColor: roseColor,  borderRadius: 6 }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { labels: { color: '#5c2e38', font: { family: 'Inter' } } }, tooltip: { callbacks: { label: ctx => ` ${money(ctx.raw)}` } } },
+        scales: {
+          x: { ticks: { color: '#9c6270' }, grid: { display: false } },
+          y: { ticks: { color: '#9c6270', callback: v => '$'+v.toLocaleString() }, grid: { color: 'rgba(219,168,160,0.15)' } }
+        }
+      }
+    });
+    return;
+  }
+
+  /* ── Compare: BTC vs Gold vs Silver (normalised to 100) ───────────── */
+  if (_investChartType === 'compare') {
+    const assets = [
+      { symbol: 'BTC',    label: 'Bitcoin',   color: '#f2a65a', vol: 'high' },
+      { symbol: 'gold',   label: 'Gold',      color: '#e8c9a0', vol: 'low'  },
+      { symbol: 'silver', label: 'Silver',    color: '#b0bec5', vol: 'low'  },
+    ];
+    const datasets = assets.map((a, ai) => {
+      const cur   = livePrice(a.symbol);
+      const start = historyStartPrice(a.symbol, cur, _investTimeRange);
+      const prices = genPriceHistory(start, cur, cfg.points, cfg.vol[a.vol], ai * 7777 + 1111);
+      const base   = prices[0] || 1;
+      return {
+        label: a.label,
+        data:  prices.map(p => Number(((p / base) * 100).toFixed(2))),
+        borderColor: a.color,
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        pointRadius: 0,
+        tension: 0.4
+      };
+    });
+    _investChart = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        plugins: { legend: { labels: { color: '#5c2e38', font: { family: 'Inter' } } }, tooltip: { callbacks: { label: ctx => ` ${ctx.formattedValue} (base 100)` } } },
+        scales: {
+          x: { ticks: { color: '#9c6270', maxTicksLimit: 6 }, grid: { display: false } },
+          y: { ticks: { color: '#9c6270' }, grid: { color: 'rgba(219,168,160,0.15)' } }
+        }
+      }
+    });
+    return;
+  }
+
+  /* ── Line / Area: single or portfolio ─────────────────────────────── */
+  let chartData, lineLabel, lineColor;
+
+  if (_investAsset === 'portfolio' || _investAsset === 'metals' || _investAsset === 'crypto') {
+    /* Sum all relevant holdings over time */
+    const inv = state.investments || { crypto: [] };
+    const goldVal   = state.metals.gold   * (livePrice('gold')   / 31.1035);
+    const silverVal = state.metals.silver * (livePrice('silver') / 31.1035);
+    const cryptoVal = inv.crypto.filter(c=>c.quantity>0).reduce((s,c) => s + c.quantity * livePrice(c.symbol), 0);
+
+    let totalCur;
+    if (_investAsset === 'metals')  totalCur = goldVal + silverVal;
+    else if (_investAsset === 'crypto') totalCur = cryptoVal;
+    else totalCur = goldVal + silverVal + cryptoVal;
+
+    const totalStart = totalCur * ({ '1D':0.99,'1W':0.96,'1M':0.90,'3M':0.84,'1Y':0.70,'all':0.60 }[_investTimeRange] || 0.90);
+    chartData  = genPriceHistory(totalStart, totalCur, cfg.points, cfg.vol.med, 99999);
+    lineLabel  = _investAsset === 'metals' ? 'Metals portfolio' : _investAsset === 'crypto' ? 'Crypto portfolio' : 'Total portfolio';
+    lineColor  = roseColor;
+  } else if (_investAsset === 'watchlist') {
+    const wl = (state.investments?.crypto || []).filter(c => c.watchlist);
+    const totalCur = wl.reduce((s, c) => s + c.quantity * livePrice(c.symbol), 0) || 1000;
+    chartData = genPriceHistory(totalCur * 0.90, totalCur, cfg.points, cfg.vol.med, 55555);
+    lineLabel = 'Watchlist value'; lineColor = blueColor;
+  } else {
+    /* Single asset */
+    const sym = _investAsset;
+    const isLower = ['gold','silver'].includes(sym.toLowerCase());
+    const cur   = livePrice(sym);
+    const start = historyStartPrice(sym, cur, _investTimeRange);
+    const vol   = ['BTC','ETH'].includes(sym.toUpperCase()) ? cfg.vol.high : cfg.vol.low;
+    const seed  = sym.split('').reduce((s,c,i) => s + c.charCodeAt(0) * (i+1), 0);
+    chartData   = genPriceHistory(start, cur, cfg.points, vol, seed);
+    lineLabel   = sym.toUpperCase() === 'BTC' ? 'Bitcoin (AUD)' : sym.toUpperCase() === 'ETH' ? 'Ethereum (AUD)' : sym.charAt(0).toUpperCase()+sym.slice(1)+' /g (AUD)';
+    lineColor   = sym.toUpperCase() === 'BTC' ? '#f2a65a' : sym.toUpperCase() === 'ETH' ? blueColor : goldColor;
+  }
+
+  const gradient = ctx.createLinearGradient(0, 0, 0, 260);
+  gradient.addColorStop(0, lineColor + '55');
+  gradient.addColorStop(1, lineColor + '00');
+
+  _investChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: lineLabel,
+        data: chartData,
+        borderColor: lineColor,
+        backgroundColor: _investChartType === 'area' ? gradient : 'transparent',
+        fill: _investChartType === 'area',
+        borderWidth: 2,
+        pointRadius: 0,
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: '#5c2e38', font: { family: 'Inter' } } },
+        tooltip: { callbacks: { label: ctx => ` ${money(ctx.raw)}` } }
+      },
+      scales: {
+        x: { ticks: { color: '#9c6270', maxTicksLimit: 6 }, grid: { display: false } },
+        y: { ticks: { color: '#9c6270', callback: v => '$'+Number(v.toFixed(0)).toLocaleString() }, grid: { color: 'rgba(219,168,160,0.15)' } }
+      }
+    }
+  });
+}
+
+function renderInvestHoldings() {
+  const el = document.getElementById('investHoldingsList');
+  if (!el || !state) return;
+  const inv = state.investments || { crypto: [] };
+  const rows = [];
+
+  /* Metals */
+  const goldPg   = livePrice('gold')   / 31.1035;
+  const silverPg = livePrice('silver') / 31.1035;
+  if (state.metals.gold > 0) {
+    const val  = state.metals.gold * goldPg;
+    const cost = state.metals.gold * (state.settings.goldAud / 31.1035);
+    const gl   = val - cost;
+    rows.push(`
+      <div class="invest-holding-row" data-invest-asset="gold">
+        <span class="invest-hold-sym gold-sym">Au</span>
+        <div class="invest-hold-info">
+          <strong>Gold</strong>
+          <small>${state.metals.gold.toFixed(2)}g · ${money(goldPg)}/g</small>
+        </div>
+        <div class="invest-hold-value">
+          <strong>${money(val)}</strong>
+          <small class="${gl >= 0 ? 'positive' : 'negative'}">${gl >= 0 ? '+' : ''}${money(gl)}</small>
+        </div>
+      </div>`);
+  }
+  if (state.metals.silver > 0) {
+    const val  = state.metals.silver * silverPg;
+    const cost = state.metals.silver * (state.settings.silverAud / 31.1035);
+    const gl   = val - cost;
+    rows.push(`
+      <div class="invest-holding-row" data-invest-asset="silver">
+        <span class="invest-hold-sym silver-sym">Ag</span>
+        <div class="invest-hold-info">
+          <strong>Silver</strong>
+          <small>${state.metals.silver.toFixed(2)}g · ${money(silverPg)}/g</small>
+        </div>
+        <div class="invest-hold-value">
+          <strong>${money(val)}</strong>
+          <small class="${gl >= 0 ? 'positive' : 'negative'}">${gl >= 0 ? '+' : ''}${money(gl)}</small>
+        </div>
+      </div>`);
+  }
+
+  /* Crypto */
+  inv.crypto.forEach(c => {
+    const price = livePrice(c.symbol);
+    const val   = c.quantity * price;
+    const cost  = c.quantity * (c.averageBuyPrice || 0);
+    const gl    = val - cost;
+    const sym   = c.symbol.toUpperCase();
+    rows.push(`
+      <div class="invest-holding-row" data-invest-asset="${sym}">
+        <span class="invest-hold-sym crypto-sym">${sym.slice(0, 3)}</span>
+        <div class="invest-hold-info">
+          <strong>${c.name}${c.watchlist && c.quantity < 0.000001 ? ' <small>(watchlist)</small>' : ''}</strong>
+          <small>${c.quantity > 0 ? c.quantity.toFixed(6)+' '+sym+' · ' : ''}${money(price)}</small>
+        </div>
+        <div class="invest-hold-value">
+          ${c.quantity > 0 ? `<strong>${money(val)}</strong><small class="${gl >= 0 ? 'positive' : 'negative'}">${gl >= 0 ? '+' : ''}${money(gl)}</small>` : `<small>Watching</small>`}
+        </div>
+      </div>`);
+  });
+
+  el.innerHTML = rows.length
+    ? rows.join('')
+    : `<div class="empty-state">No holdings yet. Buy an asset to get started.</div>`;
+
+  /* Click to select asset detail */
+  el.querySelectorAll('[data-invest-asset]').forEach(row => {
+    row.addEventListener('click', () => {
+      _investAsset = row.dataset.investAsset;
+      document.querySelectorAll('#assetSelector button').forEach(b => b.classList.toggle('active', b.dataset.investAsset === _investAsset));
+      renderAssetDetail();
+      renderInvestChart();
+    });
+  });
+}
+
+function renderAssetDetail() {
+  const nameEl   = document.getElementById('assetDetailName');
+  const dlEl     = document.getElementById('investDetailDl');
+  const actionEl = document.getElementById('investActionRow');
+  if (!nameEl || !dlEl || !actionEl || !state) return;
+
+  const inv = state.investments || { crypto: [] };
+  const sym = _investAsset.toUpperCase();
+  const isGold   = _investAsset === 'gold';
+  const isSilver = _investAsset === 'silver';
+  const isMetal  = isGold || isSilver;
+  const isCrypto = ['BTC','ETH'].includes(sym) || (!isMetal && _investAsset !== 'portfolio' && _investAsset !== 'metals' && _investAsset !== 'crypto' && _investAsset !== 'watchlist');
+
+  if (_investAsset === 'portfolio' || _investAsset === 'metals' || _investAsset === 'crypto' || _investAsset === 'watchlist') {
+    nameEl.textContent = _investAsset === 'portfolio' ? 'Total Portfolio' : _investAsset === 'metals' ? 'Metals' : _investAsset === 'crypto' ? 'Crypto' : 'Watchlist';
+    dlEl.innerHTML = `<div class="empty-state" style="margin:0">Click a specific asset below to see details and trade.</div>`;
+    actionEl.innerHTML = '';
+    return;
+  }
+
+  if (isMetal) {
+    const grams   = isGold ? state.metals.gold : state.metals.silver;
+    const spotAud = isGold ? livePrice('gold') : livePrice('silver');
+    const spotPg  = spotAud / 31.1035;
+    const val     = grams * spotPg;
+    const cost    = grams * ((isGold ? state.settings.goldAud : state.settings.silverAud) / 31.1035);
+    const gl      = val - cost;
+    nameEl.textContent = isGold ? 'Gold (Au)' : 'Silver (Ag)';
+    dlEl.innerHTML = `
+      <div class="invest-dl-row"><dt>Spot price</dt><dd>${money(spotPg)}/g</dd></div>
+      <div class="invest-dl-row"><dt>Holdings</dt><dd>${grams.toFixed(2)}g</dd></div>
+      <div class="invest-dl-row"><dt>Current value</dt><dd>${money(val)}</dd></div>
+      <div class="invest-dl-row"><dt>Gain / loss</dt><dd class="${gl >= 0 ? 'positive' : 'negative'}">${gl >= 0 ? '+' : ''}${money(gl)}</dd></div>`;
+    actionEl.innerHTML = `<p class="form-note" style="margin:0">Trade metals in the <b>Metals</b> tab.</p>`;
+    return;
+  }
+
+  if (isCrypto) {
+    const price    = livePrice(sym);
+    const holding  = inv.crypto.find(c => c.symbol === sym) || { quantity: 0, averageBuyPrice: price, watchlist: false };
+    const val      = holding.quantity * price;
+    const cost     = holding.quantity * (holding.averageBuyPrice || 0);
+    const gl       = val - cost;
+    const glPct    = cost > 0 ? ((gl / cost) * 100).toFixed(2) : '0.00';
+    const isWl     = holding.watchlist;
+    const cryptoNames = { BTC: 'Bitcoin', ETH: 'Ethereum' };
+    nameEl.textContent = cryptoNames[sym] || sym;
+    dlEl.innerHTML = `
+      <div class="invest-dl-row"><dt>Current price</dt><dd>${money(price)}</dd></div>
+      <div class="invest-dl-row"><dt>Holdings</dt><dd>${holding.quantity > 0 ? holding.quantity.toFixed(6)+' '+sym : 'None'}</dd></div>
+      <div class="invest-dl-row"><dt>Avg buy price</dt><dd>${holding.quantity > 0 ? money(holding.averageBuyPrice) : '-'}</dd></div>
+      <div class="invest-dl-row"><dt>Current value</dt><dd>${holding.quantity > 0 ? money(val) : '-'}</dd></div>
+      <div class="invest-dl-row"><dt>Gain / loss</dt><dd class="${gl >= 0 ? 'positive' : 'negative'}">${holding.quantity > 0 ? (gl >= 0 ? '+' : '')+money(gl)+' ('+glPct+'%)' : '-'}</dd></div>`;
+    actionEl.innerHTML = `
+      <button class="button primary small" data-invest-buy="${sym}" data-invest-name="${cryptoNames[sym]||sym}">Buy</button>
+      ${holding.quantity > 0 ? `<button class="button soft small" data-invest-sell="${sym}" data-invest-name="${cryptoNames[sym]||sym}">Sell</button>` : ''}
+      <button class="button ghost small" data-invest-watchlist="${sym}" data-invest-name="${cryptoNames[sym]||sym}" data-invest-wl-active="${isWl}">${isWl ? '- Watchlist' : '+ Watchlist'}</button>`;
+    return;
+  }
+
+  nameEl.textContent = 'Select an asset';
+  dlEl.innerHTML = `<div class="empty-state" style="margin:0">Click a holding to see details.</div>`;
+  actionEl.innerHTML = '';
+}
+
+function renderInvest() {
+  if (!state) return;
+
+  /* Init live prices from state on first load */
+  if (!_liveMarketPrices) {
+    _liveMarketPrices = JSON.parse(JSON.stringify(state.marketPrices || {}));
+  } else {
+    /* Update BTC/ETH from state if server returned fresh values (after buy/sell) */
+    Object.keys(state.marketPrices || {}).forEach(k => {
+      if (!_liveMarketPrices[k]) _liveMarketPrices[k] = { ...state.marketPrices[k] };
+    });
+  }
+
+  const inv      = state.investments || { crypto: [] };
+  const goldPg   = livePrice('gold')   / 31.1035;
+  const silverPg = livePrice('silver') / 31.1035;
+  const goldVal   = state.metals.gold   * goldPg;
+  const silverVal = state.metals.silver * silverPg;
+  const cryptoVal = inv.crypto.filter(c => c.quantity > 0).reduce((s, c) => s + c.quantity * livePrice(c.symbol), 0);
+  const totalVal  = goldVal + silverVal + cryptoVal;
+
+  /* Cost basis for gain/loss */
+  const goldCost   = state.metals.gold   * (state.settings.goldAud   / 31.1035);
+  const silverCost = state.metals.silver * (state.settings.silverAud / 31.1035);
+  const cryptoCost = inv.crypto.filter(c => c.quantity > 0).reduce((s, c) => s + c.quantity * (c.averageBuyPrice || 0), 0);
+  const totalCost  = goldCost + silverCost + cryptoCost;
+  const gainLoss   = totalVal - totalCost;
+
+  /* Simulate daily change as 0.3-1.5% random (seeded to today's date) */
+  const todaySeed  = new Date().toDateString().split('').reduce((s, c) => s + c.charCodeAt(0), 0);
+  const dayChange  = totalVal * (seededRand(todaySeed)() * 0.018 - 0.004);
+
+  /* Risk label: crypto > 40% = High, crypto > 15% = Medium, else Low */
+  const cryptoPct = totalVal > 0 ? cryptoVal / totalVal : 0;
+  const riskLabel = cryptoPct > 0.4 ? 'High' : cryptoPct > 0.15 ? 'Medium' : 'Low';
+  const riskClass = cryptoPct > 0.4 ? 'risk-high' : cryptoPct > 0.15 ? 'risk-med' : 'risk-low';
+
+  const investTotal  = document.getElementById('investTotal');
+  const investChange = document.getElementById('investChange');
+  const investGL     = document.getElementById('investGainLoss');
+  const investCash   = document.getElementById('investCash');
+  const investRisk   = document.getElementById('investRisk');
+
+  if (investTotal)  investTotal.textContent  = money(totalVal);
+  if (investChange) {
+    investChange.textContent = (dayChange >= 0 ? '+' : '') + money(dayChange);
+    investChange.className   = dayChange >= 0 ? 'positive' : 'negative';
+  }
+  if (investGL) {
+    investGL.textContent = (gainLoss >= 0 ? '+' : '') + money(gainLoss);
+    investGL.className   = gainLoss >= 0 ? 'positive' : 'negative';
+  }
+  if (investCash)   investCash.textContent  = money(state.user.balance);
+  if (investRisk) {
+    investRisk.textContent  = riskLabel;
+    investRisk.className    = `invest-risk-badge ${riskClass}`;
+  }
+
+  renderInvestHoldings();
+  renderAssetDetail();
+  renderInvestChart();
+}
+
+/* Start live price ticker (client-side only, no server calls) */
+function startLivePriceTick() {
+  if (_liveTickTimer) return;
+  _liveTickTimer = setInterval(() => {
+    if (!_liveMarketPrices) return;
+    const rand = Math.random;
+    Object.keys(_liveMarketPrices).forEach(key => {
+      if (_liveMarketPrices[key]?.aud != null) {
+        const vol = ['BTC','ETH'].includes(key) ? 0.003 : 0.0008;
+        _liveMarketPrices[key].aud = Number((_liveMarketPrices[key].aud * (1 + (rand() - 0.5) * vol)).toFixed(2));
+      }
+    });
+    /* Re-render invest tab only if it is active */
+    const investTab = document.getElementById('tab-invest');
+    if (investTab && investTab.classList.contains('active')) {
+      renderInvest();
+    }
+  }, 15000);
 }
 
 function renderSecurityLog() {
@@ -1452,6 +1981,159 @@ function bindEvents() {
       postAction({ type: "delete-recipient", recipientName }, null)
         .catch(() => {})
         .finally(() => renderTransfer());
+    }
+  });
+
+  /* ── Invest: asset selector tabs ────────────────────────────────────── */
+  document.addEventListener("click", e => {
+    const assetBtn = e.target.closest("[data-invest-asset]");
+    if (assetBtn && assetBtn.closest("#assetSelector")) {
+      document.querySelectorAll("#assetSelector button").forEach(b => b.classList.remove("active"));
+      assetBtn.classList.add("active");
+      _investAsset = assetBtn.dataset.investAsset;
+      renderAssetDetail();
+      renderInvestChart();
+    }
+  });
+
+  /* ── Invest: chart type selector ────────────────────────────────────── */
+  document.addEventListener("click", e => {
+    const ctBtn = e.target.closest("[data-chart-type]");
+    if (ctBtn) {
+      document.querySelectorAll("#chartTypeSelector button").forEach(b => b.classList.remove("active"));
+      ctBtn.classList.add("active");
+      _investChartType = ctBtn.dataset.chartType;
+      renderInvestChart();
+    }
+  });
+
+  /* ── Invest: time range tabs ────────────────────────────────────────── */
+  document.addEventListener("click", e => {
+    const rangeBtn = e.target.closest("[data-range]");
+    if (rangeBtn) {
+      document.querySelectorAll("#timeRangeTabs button").forEach(b => b.classList.remove("active"));
+      rangeBtn.classList.add("active");
+      _investTimeRange = rangeBtn.dataset.range;
+      renderInvestChart();
+    }
+  });
+
+  /* ── Invest: refresh prices button ─────────────────────────────────── */
+  document.getElementById("refreshPricesBtn")?.addEventListener("click", async () => {
+    try {
+      await postAction({ type: "refresh-market-prices" }, null);
+      _liveMarketPrices = JSON.parse(JSON.stringify(state.marketPrices || {}));
+      renderInvest();
+      toast("Prices refreshed.");
+    } catch (err) { toast(err.message); }
+  });
+
+  /* ── Invest: buy / sell / watchlist buttons (delegated) ─────────────── */
+  document.addEventListener("click", e => {
+    const buyBtn = e.target.closest("[data-invest-buy]");
+    const sellBtn = e.target.closest("[data-invest-sell]");
+    const wlBtn   = e.target.closest("[data-invest-watchlist]");
+
+    if (buyBtn) {
+      const sym  = buyBtn.dataset.investBuy;
+      const name = buyBtn.dataset.investName;
+      _investTradePending = { symbol: sym, name, mode: "buy" };
+      const price = livePrice(sym);
+      const tradeTitle = document.getElementById("investTradeTitle");
+      const tradePrice = document.getElementById("investTradePrice");
+      if (tradeTitle) tradeTitle.textContent = `Buy ${name} (${sym})`;
+      if (tradePrice) tradePrice.textContent = `Current price: ${money(price)}`;
+      document.getElementById("investBuySection")?.classList.remove("hidden");
+      document.getElementById("investSellSection")?.classList.add("hidden");
+      const amt = document.getElementById("investTradeAmt");
+      if (amt) { amt.value = ""; }
+      document.getElementById("investTradeEstimate").textContent = "";
+      document.getElementById("investTradeOverlay")?.classList.remove("hidden");
+    }
+
+    if (sellBtn) {
+      const sym  = sellBtn.dataset.investSell;
+      const name = sellBtn.dataset.investName;
+      const inv  = state?.investments?.crypto || [];
+      const holding = inv.find(c => c.symbol === sym);
+      if (!holding || holding.quantity < 0.000001) return toast("No holdings to sell.");
+      _investTradePending = { symbol: sym, name, mode: "sell" };
+      const price = livePrice(sym);
+      const tradeTitle = document.getElementById("investTradeTitle");
+      const tradePrice = document.getElementById("investTradePrice");
+      if (tradeTitle) tradeTitle.textContent = `Sell ${name} (${sym})`;
+      if (tradePrice) tradePrice.textContent = `Current price: ${money(price)} · You hold: ${holding.quantity.toFixed(6)} ${sym}`;
+      document.getElementById("investBuySection")?.classList.add("hidden");
+      document.getElementById("investSellSection")?.classList.remove("hidden");
+      const qty = document.getElementById("investSellQty");
+      if (qty) { qty.value = ""; qty.max = holding.quantity; }
+      document.getElementById("investSellEstimate").textContent = "";
+      document.getElementById("investTradeOverlay")?.classList.remove("hidden");
+    }
+
+    if (wlBtn) {
+      const sym  = wlBtn.dataset.investWatchlist;
+      const name = wlBtn.dataset.investName;
+      const isActive = wlBtn.dataset.investWlActive === "true";
+      if (isActive) {
+        postAction({ type: "remove-watchlist", symbol: sym }, `${sym} removed from watchlist.`);
+      } else {
+        postAction({ type: "add-watchlist", symbol: sym, name }, `${sym} added to watchlist.`);
+      }
+    }
+  });
+
+  /* Buy amount estimate */
+  document.getElementById("investTradeAmt")?.addEventListener("input", () => {
+    const aud  = Number(document.getElementById("investTradeAmt").value || 0);
+    const sym  = _investTradePending?.symbol;
+    const price = sym ? livePrice(sym) : 0;
+    const est  = document.getElementById("investTradeEstimate");
+    if (est) est.textContent = aud > 0 && price > 0 ? `You receive approx. ${(aud / price).toFixed(6)} ${sym}` : "";
+  });
+
+  /* Sell quantity estimate */
+  document.getElementById("investSellQty")?.addEventListener("input", () => {
+    const qty   = Number(document.getElementById("investSellQty").value || 0);
+    const sym   = _investTradePending?.symbol;
+    const price  = sym ? livePrice(sym) : 0;
+    const est   = document.getElementById("investSellEstimate");
+    if (est) est.textContent = qty > 0 && price > 0 ? `You receive approx. ${money(qty * price)}` : "";
+  });
+
+  /* Trade cancel */
+  document.getElementById("investTradeCancelBtn")?.addEventListener("click", () => {
+    document.getElementById("investTradeOverlay")?.classList.add("hidden");
+    _investTradePending = null;
+  });
+
+  /* Trade confirm */
+  document.getElementById("investTradeConfirmBtn")?.addEventListener("click", async () => {
+    if (!_investTradePending) return;
+    const { symbol, name, mode } = _investTradePending;
+    try {
+      if (mode === "buy") {
+        const aud = Number(document.getElementById("investTradeAmt")?.value || 0);
+        if (!aud || aud <= 0) return toast("Enter an amount to buy.");
+        await postAction({ type: "buy-investment", symbol, name, audAmount: aud }, `Bought ${money(aud)} of ${name}.`);
+      } else {
+        const qty = Number(document.getElementById("investSellQty")?.value || 0);
+        if (!qty || qty <= 0) return toast("Enter a quantity to sell.");
+        await postAction({ type: "sell-investment", symbol, quantity: qty }, `Sold ${qty.toFixed(6)} ${symbol}.`);
+      }
+      document.getElementById("investTradeOverlay")?.classList.add("hidden");
+      _liveMarketPrices = JSON.parse(JSON.stringify(state.marketPrices || {}));
+      _investTradePending = null;
+    } catch (err) { toast(err.message); }
+  });
+
+  /* Start live ticker when Invest tab becomes active */
+  document.querySelectorAll(".app-nav button").forEach(btn => {
+    if (btn.dataset.tab === "invest") {
+      btn.addEventListener("click", () => {
+        startLivePriceTick();
+        if (state) renderInvest();
+      });
     }
   });
 }
