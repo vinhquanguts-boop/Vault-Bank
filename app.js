@@ -470,18 +470,20 @@ async function postAction(payload, successMessage) {
   }
 }
 
-let _prevBalance     = null;
-let _metalAction     = 'buy';
-let _metalType       = 'gold';
-let _splitFilter     = 'all';
-let _splitType       = 'equal';
-let _transferMethod  = 'bsb';
-let _pendingTransfer = null;
-let _enteredPin      = '';
-let _txFilter        = 'all';  /* transaction filter in Spend tab */
-let _txSearch        = '';     /* keyword search in Spend tab */
-let _pinRevealTimer  = null;   /* auto-hide PIN/CVV */
-let _cvvRevealTimer  = null;
+let _prevBalance      = null;
+let _metalAction      = 'buy';
+let _metalType        = 'gold';
+let _splitFilter      = 'all';
+let _splitType        = 'equal';
+let _transferMethod   = 'bsb';
+let _pendingTransfer  = null;
+let _enteredPin       = '';
+let _txFilter         = 'all';
+let _txSearch         = '';
+let _pinRevealTimer   = null;
+let _cvvRevealTimer   = null;
+let _activeTxId       = null;
+let _mergedRecipients = [];
 
 /* Invest tab state */
 let _investAsset       = 'portfolio';
@@ -613,10 +615,39 @@ function renderTxList() {
   el.innerHTML = filtered.length === 0
     ? `<div class="empty-state">No transactions match${_txSearch ? ` "${_txSearch}"` : ' this filter'}.</div>`
     : filtered.slice(0, 30).map(item => `
-        <div class="list-row">
-          <span><b>${item.title}</b><br><small>${item.category} · ${item.date}${item.receiptId ? ` · ${item.receiptId}` : ''}</small></span>
+        <div class="list-row list-row-clickable" data-tx-id="${item.id}">
+          <span>
+            <b>${item.title}</b>${item.status === 'disputed' ? ' <span class="badge-dispute">Disputed</span>' : ''}
+            <br><small>${item.category} · ${item.date}${item.receiptId ? ` · <span class="mono">${item.receiptId}</span>` : ''}${item.note ? ` · ${item.note}` : ''}</small>
+          </span>
           <strong class="${item.amount >= 0 ? 'positive' : 'negative'}">${item.amount >= 0 ? '+' : ''}${money(item.amount)}</strong>
         </div>`).join('');
+}
+
+function showTxDetail(txId) {
+  const tx = state?.transactions.find(t => t.id === txId);
+  if (!tx) return;
+  _activeTxId = txId;
+  const nameEl = $('#txDetailName');
+  if (nameEl) nameEl.textContent = tx.title;
+  const rowsEl = $('#txDetailRows');
+  if (rowsEl) {
+    rowsEl.innerHTML = [
+      ['Amount',   `<strong class="${tx.amount >= 0 ? 'positive' : 'negative'}">${tx.amount >= 0 ? '+' : ''}${money(tx.amount)}</strong>`],
+      ['Category', `<strong>${tx.category}</strong>`],
+      ['Date',     `<strong>${tx.date}</strong>`],
+      ...(tx.receiptId ? [['Receipt ID', `<strong class="mono">${tx.receiptId}</strong>`]] : []),
+    ].map(([l, v]) => `<div class="review-row"><span>${l}</span>${v}</div>`).join('');
+  }
+  const noteEl = $('#txDetailNote');
+  if (noteEl) noteEl.value = tx.note || '';
+  const catEl  = $('#txDetailCategory');
+  if (catEl)  catEl.value  = tx.category || '';
+  const disputeNote = $('#txDetailDisputeNote');
+  if (disputeNote) disputeNote.classList.toggle('hidden', tx.status !== 'disputed');
+  const disputeBtn = $('#txDetailDisputeBtn');
+  if (disputeBtn) disputeBtn.textContent = tx.status === 'disputed' ? 'Remove dispute flag' : 'Flag as dispute';
+  $('#txDetailOverlay')?.classList.remove('hidden');
 }
 
 function renderSavings() {
@@ -769,17 +800,24 @@ function renderSplits() {
         const isOwe     = split.status === 'owe';
         const isOwed    = split.status === 'owed';
         const isSettled = split.status === 'settled';
+        const parts     = split.participants || [];
+        const partHtml  = parts.length > 1
+          ? `<div class="split-participants">${parts.map(p =>
+              `<span class="split-p-chip${p.paid ? '' : ' unpaid'}">${p.name} ${money(p.share)}${p.paid ? '' : ' ⧖'}</span>`
+            ).join('')}</div>`
+          : '';
         return `
           <div class="list-row split-list-row">
             <div>
               <b>${split.name}</b>
-              <small>with ${split.friend}</small>
+              <small>with ${split.friend}${split.totalAmount ? ` · Total ${money(split.totalAmount)}` : ''}</small>
+              ${partHtml}
             </div>
             <div class="split-row-right">
               <strong class="${isOwe ? 'negative' : isOwed ? 'positive' : ''}">${isOwe ? '−' : isOwed ? '+' : ''}${money(split.amount)}</strong>
               <span class="split-badge ${isOwe ? 'badge-owe' : isOwed ? 'badge-owed' : 'badge-settled'}">${isOwe ? 'You owe' : isOwed ? 'Owed to you' : 'Settled'}</span>
-              ${isOwe    ? `<button class="button soft small" data-settle="${split.id}">Settle now</button>` : ''}
-              ${isOwed   ? `<button class="button ghost small" data-remind="${split.id}">Remind</button>`  : ''}
+              ${isOwe  ? `<button class="button soft small" data-settle="${split.id}">Settle now</button>` : ''}
+              ${isOwed ? `<button class="button ghost small" data-remind="${split.id}">Remind</button>` : ''}
             </div>
           </div>`;
       }).join('');
@@ -811,6 +849,20 @@ function renderCard() {
   if (limitInput && !limitInput.value) limitInput.placeholder = String(card.dailyLimit);
   $("#freezeBtn").textContent = card.frozen ? "Unfreeze card" : "Freeze card";
   $("#vaultCard").classList.toggle("frozen", card.frozen);
+  const replBtn = $("#requestReplacementBtn");
+  if (replBtn) {
+    replBtn.textContent = card.replacementRequested
+      ? `Replacement requested ✓${card.replacementEta ? ` · ETA ${card.replacementEta}` : ''}`
+      : "Request replacement";
+    replBtn.disabled = !!card.replacementRequested;
+  }
+  /* Block sensitive actions while frozen (except freeze/unfreeze & replacement) */
+  const frozenMsg = card.frozen ? "Unfreeze your card first." : "";
+  [$("#revealPinBtn"), $("#revealCvvBtn"), $("#saveLimitBtn"), $("#changePinBtn")].forEach(btn => {
+    if (!btn) return;
+    btn.disabled = card.frozen;
+    btn.title    = frozenMsg;
+  });
 }
 
 function renderCardTxList() {
@@ -830,10 +882,61 @@ function renderCardTxList() {
 
 function renderProfile() {
   if (!state) return;
+  const { user } = state;
   const profileName = $("#profileName");
   const profileEmail = $("#profileEmail");
-  if (profileName && !profileName.value) profileName.placeholder = state.user.name;
-  if (profileEmail && !profileEmail.value) profileEmail.placeholder = state.user.email;
+  if (profileName && !profileName.value) profileName.placeholder = user.name;
+  if (profileEmail && !profileEmail.value) profileEmail.placeholder = user.email;
+
+  /* Dynamic identity / verification checklist */
+  const verifyList = $("#verifyList");
+  if (verifyList) {
+    const id   = user.identity  || {};
+    const lb   = (user.linkedBanks || [])[0];
+    const rows = [
+      { label: "Email verified",     note: user.email,                                              done: !!id.email  },
+      { label: "Phone verified",     note: "+61 4xx xxx xxx",                                       done: !!id.phone  },
+      { label: "Identity (AML/DOB)", note: id.aml ? "Passed · May 2026" : "Pending review",        done: !!id.aml    },
+      { label: "Bank account linked",note: lb ? `${lb.name} ····${lb.last4}` : "No bank linked",   done: !!lb && lb.status === "active" },
+    ];
+    verifyList.innerHTML = rows.map(r => `
+      <div class="verify-row ${r.done ? 'complete' : 'pending'}">
+        <span class="verify-icon">${r.done ? '✓' : '○'}</span>
+        <div><strong>${r.label}</strong><small>${r.note}</small></div>
+      </div>`).join('');
+  }
+
+  /* Notification preferences */
+  const notifPanel = $("#notificationsPanel");
+  if (notifPanel) {
+    const prefs = user.notifications || {};
+    notifPanel.innerHTML = [
+      { key: "transfers",      label: "Transfer alerts",     note: "Notify on outgoing transfers"     },
+      { key: "budgetAlerts",   label: "Budget warnings",     note: "Alert when near spending limit"   },
+      { key: "savingsUpdates", label: "Savings updates",     note: "Monthly savings summary"          },
+      { key: "securityAlerts", label: "Security alerts",     note: "Login, PIN changes, replacements" },
+    ].map(p => `
+      <label class="notif-row">
+        <div><strong>${p.label}</strong><small>${p.note}</small></div>
+        <input type="checkbox" id="notif-${p.key}" class="notif-check" ${prefs[p.key] ? 'checked' : ''} />
+      </label>`).join('');
+  }
+
+  /* Linked banks panel */
+  const lbPanel = $("#linkedBanksList");
+  if (lbPanel) {
+    const banks = user.linkedBanks || [];
+    lbPanel.innerHTML = banks.length === 0
+      ? `<div class="verify-row pending"><span class="verify-icon">○</span><div><strong>No bank linked</strong><small>Contact support to link your account.</small></div></div>`
+      : banks.map(lb => `
+          <div class="verify-row ${lb.status === 'active' ? 'complete' : 'pending'}">
+            <span class="verify-icon">${lb.status === 'active' ? '✓' : '○'}</span>
+            <div>
+              <strong>${lb.name}</strong>
+              <small>BSB ${lb.bsb} · ····${lb.last4} · ${lb.status}</small>
+            </div>
+          </div>`).join('');
+  }
 }
 
 function renderHomeSnapshot() {
@@ -1470,10 +1573,11 @@ function renderTransfer() {
   /* Prefer DB recipients; fall back to localStorage */
   const dbRecipients = state?.recipients || [];
   const lsRecipients = JSON.parse(localStorage.getItem("vaultRecipients") || "[]");
-  const merged = [...dbRecipients];
+  _mergedRecipients = [...dbRecipients];
   lsRecipients.forEach(r => {
-    if (!merged.some(m => m.name === r.name)) merged.push(r);
+    if (!_mergedRecipients.some(m => m.name === r.name)) _mergedRecipients.push(r);
   });
+  const merged = _mergedRecipients;
   el.innerHTML = merged.length === 0
     ? `<p class="form-note">No saved recipients yet. Complete a transfer with "Save recipient" checked to add one.</p>`
     : merged.map((r, i) => `
@@ -1537,7 +1641,6 @@ async function confirmTransfer() {
     return;
   }
   try {
-    const txId = "VLT" + Math.random().toString(36).slice(2, 8).toUpperCase();
     await postAction({
       type:          "transfer-send",
       amount:        _pendingTransfer.amount,
@@ -1548,6 +1651,8 @@ async function confirmTransfer() {
       payid:         _pendingTransfer.payid   || null,
       save:          _pendingTransfer.save    || false
     }, null);
+    /* Use server-generated receipt ID from returned state */
+    const txId = state?.transferReceipts?.[0]?.id || ("VLT" + Math.random().toString(36).slice(2, 8).toUpperCase());
 
     /* Also mirror to localStorage for offline/Firebase mode */
     if (_pendingTransfer.save) {
@@ -1793,8 +1898,7 @@ function bindEvents() {
     /* Use saved recipient */
     const useIdx = e.target.dataset.useRecipient;
     if (useIdx !== undefined) {
-      const saved = JSON.parse(localStorage.getItem("vaultRecipients") || "[]");
-      const r = saved[+useIdx];
+      const r = _mergedRecipients[+useIdx];
       if (!r) return;
       const bsbBtn = document.querySelector('[data-transfer-method="bsb"]');
       const payidBtn = document.querySelector('[data-transfer-method="payid"]');
@@ -2188,9 +2292,68 @@ function bindEvents() {
       });
     }
   });
+
+  /* ── Transaction detail overlay ─────────────────────────────────────── */
+  $("#txList")?.addEventListener("click", e => {
+    const row = e.target.closest("[data-tx-id]");
+    if (row) showTxDetail(row.dataset.txId);
+  });
+  $("#txDetailCloseBtn")?.addEventListener("click", () => {
+    $("#txDetailOverlay")?.classList.add("hidden");
+    _activeTxId = null;
+  });
+  $("#txDetailSaveBtn")?.addEventListener("click", async () => {
+    if (!_activeTxId) return;
+    const note     = $("#txDetailNote")?.value ?? "";
+    const category = $("#txDetailCategory")?.value.trim();
+    try {
+      await postAction({ type: "edit-transaction", txId: _activeTxId, note, category }, "Transaction updated.");
+      /* Refresh detail view with updated data */
+      showTxDetail(_activeTxId);
+    } catch (err) { toast(err.message, 'error'); }
+  });
+  $("#txDetailDisputeBtn")?.addEventListener("click", async () => {
+    if (!_activeTxId) return;
+    try {
+      await postAction({ type: "dispute-transaction", txId: _activeTxId }, null);
+      const tx = state?.transactions.find(t => t.id === _activeTxId);
+      toast(tx?.status === 'disputed' ? "Transaction flagged as disputed." : "Dispute flag removed.");
+      showTxDetail(_activeTxId);
+    } catch (err) { toast(err.message, 'error'); }
+  });
+
+  /* ── Card replacement ───────────────────────────────────────────────── */
+  $("#requestReplacementBtn")?.addEventListener("click", async () => {
+    const card = state?.card;
+    if (card?.replacementRequested) return toast("Replacement already requested.");
+    if (!confirm("Request a replacement card? A new card will be issued within 5 business days.")) return;
+    try {
+      await postAction({ type: "request-card-replacement" }, "Replacement card requested. Arrives in 5 business days.");
+      $("#requestReplacementBtn").textContent = "Replacement requested ✓";
+      $("#requestReplacementBtn").disabled = true;
+    } catch (err) { toast(err.message, 'error'); }
+  });
+
+  /* ── Notification preferences save ─────────────────────────────────── */
+  $("#saveNotificationsBtn")?.addEventListener("click", async () => {
+    const keys = ["transfers", "budgetAlerts", "savingsUpdates", "securityAlerts"];
+    const payload = { type: "edit-notifications" };
+    keys.forEach(k => { payload[k] = !!($("#notif-" + k)?.checked); });
+    try {
+      await postAction(payload, "Notification preferences saved.");
+      const note = $("#notifNote");
+      if (note) note.textContent = "Preferences saved.";
+    } catch (err) { toast(err.message, 'error'); }
+  });
+
+  /* ── Static warning dismiss ─────────────────────────────────────────── */
+  $("#staticWarningClose")?.addEventListener("click", () => {
+    $("#staticWarning")?.classList.add("hidden");
+  });
 }
 
 bindEvents();
+if (USE_FIREBASE) $('#staticWarning')?.classList.remove('hidden');
 if (location.hash) {
   const tab = location.hash.replace("#", "");
   if ($(`#tab-${tab}`)) setActiveTab(tab);

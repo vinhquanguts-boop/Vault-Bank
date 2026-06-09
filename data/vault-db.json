@@ -8,10 +8,30 @@
       "avatar": "S",
       "balance": 16032.05,
       "monthlyIncome": 8686,
-      "spent": 321.54,
-      "saved": 60.33,
+      "spent": 4000,
+      "saved": 850,
       "trustScore": 78,
-      "createdAt": "2026-05-20T00:00:00.000Z"
+      "createdAt": "2026-05-20T00:00:00.000Z",
+      "identity": {
+        "email": true,
+        "phone": true,
+        "aml": true
+      },
+      "linkedBanks": [
+        {
+          "id": "lb1",
+          "name": "CommonBank",
+          "bsb": "062-000",
+          "last4": "4821",
+          "status": "active"
+        }
+      ],
+      "notifications": {
+        "transfers": true,
+        "budgetAlerts": true,
+        "savingsUpdates": true,
+        "securityAlerts": true
+      }
     }
   ],
   "budgets": {
@@ -19,7 +39,7 @@
       {
         "id": "b1",
         "name": "Groceries",
-        "spent": 340,
+        "spent": 112.54,
         "limit": 400,
         "icon": "basket"
       },
@@ -33,21 +53,21 @@
       {
         "id": "b3",
         "name": "Transport",
-        "spent": 188,
+        "spent": 0,
         "limit": 260,
         "icon": "train"
       },
       {
         "id": "b4",
         "name": "Shopping",
-        "spent": 522,
+        "spent": 0,
         "limit": 500,
         "icon": "bag"
       },
       {
         "id": "b5",
         "name": "Subscriptions",
-        "spent": 91,
+        "spent": 0,
         "limit": 120,
         "icon": "repeat"
       }
@@ -95,21 +115,69 @@
         "name": "Dinner at Kumo",
         "friend": "Mia",
         "amount": 42.5,
-        "status": "owed"
+        "totalAmount": 85,
+        "splitType": "equal",
+        "status": "owed",
+        "participants": [
+          {
+            "name": "Sarah Chen",
+            "share": 42.5,
+            "paid": true
+          },
+          {
+            "name": "Mia",
+            "share": 42.5,
+            "paid": false
+          }
+        ]
       },
       {
         "id": "s2",
         "name": "Beach house",
-        "friend": "Noah",
+        "friend": "Noah, Alex",
         "amount": 118,
-        "status": "owe"
+        "totalAmount": 354,
+        "splitType": "equal",
+        "status": "settled",
+        "settledAt": "2026-06-06T10:41:53.287Z",
+        "participants": [
+          {
+            "name": "Sarah Chen",
+            "share": 118,
+            "paid": true
+          },
+          {
+            "name": "Noah",
+            "share": 118,
+            "paid": true
+          },
+          {
+            "name": "Alex",
+            "share": 118,
+            "paid": true
+          }
+        ]
       },
       {
         "id": "s3",
         "name": "Coffee run",
         "friend": "Ava",
         "amount": 7.8,
-        "status": "owed"
+        "totalAmount": 15.6,
+        "splitType": "equal",
+        "status": "owed",
+        "participants": [
+          {
+            "name": "Sarah Chen",
+            "share": 7.8,
+            "paid": true
+          },
+          {
+            "name": "Ava",
+            "share": 7.8,
+            "paid": false
+          }
+        ]
       }
     ]
   },
@@ -121,7 +189,9 @@
         "category": "Income",
         "amount": 8888,
         "type": "income",
-        "date": "Today"
+        "date": "Today",
+        "note": "",
+        "status": "active"
       },
       {
         "id": "t2",
@@ -129,7 +199,9 @@
         "category": "Groceries",
         "amount": -87.54,
         "type": "expense",
-        "date": "Today"
+        "date": "Today",
+        "note": "",
+        "status": "active"
       },
       {
         "id": "t3",
@@ -137,7 +209,9 @@
         "category": "Dining",
         "amount": -234,
         "type": "expense",
-        "date": "Today"
+        "date": "Today",
+        "note": "",
+        "status": "active"
       },
       {
         "id": "t4",
@@ -145,7 +219,9 @@
         "category": "Savings",
         "amount": -50,
         "type": "transfer",
-        "date": "Yesterday"
+        "date": "Yesterday",
+        "note": "",
+        "status": "active"
       }
     ]
   },
@@ -157,12 +233,14 @@
       "cvv": "482",
       "dailyLimit": 5000,
       "frozen": false,
-      "status": "Active"
+      "status": "Active",
+      "replacementRequested": false,
+      "replacementEta": null
     }
   },
   "settings": {
-    "goldAud": 3318.39,
-    "silverAud": 38.5,
+    "goldAud": 3318.2,
+    "silverAud": 38.4,
     "metalFee": 0.99,
     "metalBuySpreadPct": 0.75,
     "metalSellSpreadPct": 0.5,
@@ -224,19 +302,151 @@
   },
   "marketPrices": {
     "gold": {
-      "aud": 3318.39
+      "aud": 3318.2
     },
     "silver": {
-      "aud": 38.5
+      "aud": 38.4
     },
     "BTC": {
-      "aud": 158051.31
+      "aud": 158000
     },
     "ETH": {
-      "aud": 5601.63
+      "aud": 5600
     }
   },
   "actions": [
+    {
+      "id": "a_15832175ca",
+      "action": "login",
+      "detail": "sarah@vault.au signed in",
+      "at": "2026-06-09T08:14:37.583Z"
+    },
+    {
+      "id": "a_ef63813816",
+      "action": "admin",
+      "detail": "Demo data reset to factory defaults",
+      "at": "2026-06-08T13:07:01.133Z"
+    },
+    {
+      "id": "a_acaa282edf",
+      "action": "admin",
+      "detail": "Admin edited tx \"Woolworths\" note",
+      "at": "2026-06-08T13:07:00.985Z"
+    },
+    {
+      "id": "a_717ea2fc8a",
+      "action": "profile",
+      "detail": "sarah@vault.au updated notification preferences",
+      "at": "2026-06-08T13:06:49.718Z"
+    },
+    {
+      "id": "a_983cb64d14",
+      "action": "login",
+      "detail": "sarah@vault.au signed in",
+      "at": "2026-06-08T11:24:09.044Z"
+    },
+    {
+      "id": "a_0267a8f387",
+      "action": "split",
+      "detail": "sarah@vault.au sent reminder for \"Dinner at Kumo\"",
+      "at": "2026-06-08T11:10:38.024Z"
+    },
+    {
+      "id": "a_985222a288",
+      "action": "split",
+      "detail": "sarah@vault.au sent reminder for \"Dinner at Kumo\"",
+      "at": "2026-06-08T11:10:36.878Z"
+    },
+    {
+      "id": "a_bf1779fd10",
+      "action": "savings",
+      "detail": "sarah@vault.au deposited $100.00 into fixed",
+      "at": "2026-06-08T11:05:22.123Z"
+    },
+    {
+      "id": "a_ec8220196a",
+      "action": "savings",
+      "detail": "sarah@vault.au deposited $50.00 into flexible",
+      "at": "2026-06-08T11:05:20.778Z"
+    },
+    {
+      "id": "a_8e37c4d8d5",
+      "action": "login",
+      "detail": "sarah@vault.au signed in",
+      "at": "2026-06-08T11:03:53.447Z"
+    },
+    {
+      "id": "a_6974ce86d0",
+      "action": "admin",
+      "detail": "Demo data reset to factory defaults",
+      "at": "2026-06-06T12:26:35.544Z"
+    },
+    {
+      "id": "a_02120e14f5",
+      "action": "card",
+      "detail": "sarah@vault.au requested a card replacement",
+      "at": "2026-06-06T12:26:27.277Z"
+    },
+    {
+      "id": "a_4454b5dff9",
+      "action": "transaction",
+      "detail": "sarah@vault.au edited \"Salary March\"",
+      "at": "2026-06-06T12:26:27.194Z"
+    },
+    {
+      "id": "a_61bbb0db3a",
+      "action": "transaction",
+      "detail": "sarah@vault.au cleared dispute on \"Salary March\"",
+      "at": "2026-06-06T12:26:27.122Z"
+    },
+    {
+      "id": "a_1211e896dd",
+      "action": "transaction",
+      "detail": "sarah@vault.au added \"Coles\"",
+      "at": "2026-06-06T12:26:11.227Z"
+    },
+    {
+      "id": "a_b9c76eb0c4",
+      "action": "card",
+      "detail": "sarah@vault.au requested a card replacement",
+      "at": "2026-06-06T12:26:04.030Z"
+    },
+    {
+      "id": "a_ec29c21374",
+      "action": "transaction",
+      "detail": "sarah@vault.au disputed \"Salary March\"",
+      "at": "2026-06-06T12:25:58.249Z"
+    },
+    {
+      "id": "a_79b87c5b88",
+      "action": "transaction",
+      "detail": "sarah@vault.au edited \"Salary March\"",
+      "at": "2026-06-06T12:25:51.993Z"
+    },
+    {
+      "id": "a_04c00de6ec",
+      "action": "login",
+      "detail": "sarah@vault.au signed in",
+      "at": "2026-06-06T11:10:14.482Z"
+    },
+    {
+      "id": "a_6d61d9d55b",
+      "action": "split",
+      "detail": "sarah@vault.au settled \"Beach house\"",
+      "at": "2026-06-06T10:41:53.287Z"
+    },
+    {
+      "id": "a_aecfe97b7d",
+      "action": "split",
+      "detail": "sarah@vault.au sent reminder for \"Coffee run\"",
+      "at": "2026-06-06T10:41:45.517Z"
+    },
+    {
+      "id": "a_7f2fdb18f9",
+      "action": "login",
+      "detail": "sarah@vault.au signed in",
+      "at": "2026-06-06T10:40:52.959Z"
+    },
     {
       "id": "a_95c677e8d2",
       "action": "invest",
@@ -248,30 +458,6 @@
       "action": "login",
       "detail": "sarah@vault.au signed in",
       "at": "2026-06-05T10:28:18.026Z"
-    },
-    {
-      "id": "a_3f30c0b0e2",
-      "action": "login",
-      "detail": "sarah@vault.au signed in",
-      "at": "2026-06-05T04:08:14.346Z"
-    },
-    {
-      "id": "a_1b75b22265",
-      "action": "login",
-      "detail": "sarah@vault.au signed in",
-      "at": "2026-06-05T03:43:39.078Z"
-    },
-    {
-      "id": "a_1dc5737e54",
-      "action": "login",
-      "detail": "sarah@vault.au signed in",
-      "at": "2026-05-23T10:51:04.267Z"
-    },
-    {
-      "id": "a_7087c6b4d2",
-      "action": "login",
-      "detail": "sarah@vault.au signed in",
-      "at": "2026-05-20T02:27:41.401Z"
     }
   ]
 }

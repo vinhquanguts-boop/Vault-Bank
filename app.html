@@ -5,16 +5,111 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>VAULT App Demo</title>
     <link rel="icon" href="assets/logo2.png" />
-    <link rel="stylesheet" href="styles.css?v=20260605-app-clarity" />
+    <link rel="stylesheet" href="styles.css?v=20260608-plan-cont" />
   </head>
   <body class="app-page">
+    <!-- Shown when running without npm start (static/Firebase mode) -->
+    <div class="static-warning hidden" id="staticWarning">
+      <strong>Preview mode</strong> — database actions are limited.
+      Run <code>npm start</code> in the <code>Code/</code> folder for full functionality.
+      <button class="static-warning-close" id="staticWarningClose" aria-label="Dismiss">✕</button>
+    </div>
     <div class="vault-intro app-intro" data-vault-intro>
-      <span class="vault-door vault-door-left" aria-hidden="true"></span>
-      <span class="vault-door vault-door-right" aria-hidden="true"></span>
-      <button class="vault-intro-logo" type="button" aria-label="Open VAULT app">
-        <img src="assets/logo2.png" alt="" />
-        <span>Open account</span>
+
+      <!-- ① Chamber atmosphere — dark stone/metal backdrop -->
+      <span class="vault-chamber-backdrop" aria-hidden="true"></span>
+
+      <!-- ② Corridor depth — receding tunnel frames + vault glow -->
+      <span class="vi-corridor" aria-hidden="true">
+        <span class="vi-frame vi-f1"></span>
+        <span class="vi-frame vi-f2"></span>
+        <span class="vi-frame vi-f3"></span>
+        <span class="vi-frame vi-f4"></span>
+        <span class="vi-ray vi-ray-tl"></span>
+        <span class="vi-ray vi-ray-tr"></span>
+        <span class="vi-ray vi-ray-bl"></span>
+        <span class="vi-ray vi-ray-br"></span>
+        <span class="vi-vault-light" aria-hidden="true"></span>
+      </span>
+
+      <!-- ③ Brand nameplate — institution mark above the door -->
+      <span class="vi-brand-plate" aria-hidden="true">VAULT BANK</span>
+
+      <!-- ④ Heavy antique brass door frame — corner + mid-edge bolts -->
+      <span class="vault-door-frame" aria-hidden="true">
+        <span class="vdf-corner vdf-c1" aria-hidden="true"></span>
+        <span class="vdf-corner vdf-c2" aria-hidden="true"></span>
+        <span class="vdf-corner vdf-c3" aria-hidden="true"></span>
+        <span class="vdf-corner vdf-c4" aria-hidden="true"></span>
+        <span class="vdf-bolt vdf-bt" aria-hidden="true"></span>
+        <span class="vdf-bolt vdf-bb" aria-hidden="true"></span>
+        <span class="vdf-bolt vdf-bl" aria-hidden="true"></span>
+        <span class="vdf-bolt vdf-br" aria-hidden="true"></span>
+      </span>
+
+      <!-- ⑤ Rectangular door — two heavy panels that swing into the vault -->
+      <span class="vault-door-wrap" aria-hidden="true">
+        <span class="vault-door-panel vault-door-left" aria-hidden="true">
+          <span class="vdp-bevel" aria-hidden="true"></span>
+          <span class="vdp-inset" aria-hidden="true"></span>
+          <span class="vdp-band vdp-band-1" aria-hidden="true"></span>
+          <span class="vdp-band vdp-band-2" aria-hidden="true"></span>
+          <span class="vdp-band vdp-band-3" aria-hidden="true"></span>
+          <span class="vault-bolt-bar vbb-t" aria-hidden="true"></span>
+          <span class="vault-bolt-bar vbb-m" aria-hidden="true"></span>
+          <span class="vault-bolt-bar vbb-b" aria-hidden="true"></span>
+        </span>
+        <span class="vault-door-panel vault-door-right" aria-hidden="true">
+          <span class="vdp-bevel" aria-hidden="true"></span>
+          <span class="vdp-inset" aria-hidden="true"></span>
+          <span class="vdp-band vdp-band-1" aria-hidden="true"></span>
+          <span class="vdp-band vdp-band-2" aria-hidden="true"></span>
+          <span class="vdp-band vdp-band-3" aria-hidden="true"></span>
+          <span class="vault-bolt-bar vbb-t" aria-hidden="true"></span>
+          <span class="vault-bolt-bar vbb-m" aria-hidden="true"></span>
+          <span class="vault-bolt-bar vbb-b" aria-hidden="true"></span>
+        </span>
+      </span>
+
+      <!-- ⑥ Eight radiating lock arms — retract before door opens -->
+      <span class="vault-locker" aria-hidden="true">
+        <span class="vault-lock-arm vault-lock-arm-1"></span>
+        <span class="vault-lock-arm vault-lock-arm-2"></span>
+        <span class="vault-lock-arm vault-lock-arm-3"></span>
+        <span class="vault-lock-arm vault-lock-arm-4"></span>
+        <span class="vault-lock-arm vault-lock-arm-5"></span>
+        <span class="vault-lock-arm vault-lock-arm-6"></span>
+        <span class="vault-lock-arm vault-lock-arm-7"></span>
+        <span class="vault-lock-arm vault-lock-arm-8"></span>
+      </span>
+
+      <!-- ⑦ Seam light — warm gold crack along the vertical centre -->
+      <span class="vault-seam-light" aria-hidden="true"></span>
+
+      <!-- ⑧ Walk-through burst -->
+      <span class="vi-burst" aria-hidden="true"></span>
+
+      <!-- ⑨ Entry glow — amber warmth floods in as door opens -->
+      <span class="vault-entry-glow" aria-hidden="true"></span>
+
+      <!-- ⑩ Floating dust motes — atmospheric depth -->
+      <span class="vi-dust" aria-hidden="true">
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i>
+      </span>
+
+      <!-- ⑪ Outer combination lock tick ring -->
+      <span class="vault-hub-ticks" aria-hidden="true"></span>
+
+      <!-- ⑫ Hub dial — combination lock trigger, mounted at door seam -->
+      <button class="vault-core-hub" type="button" aria-label="Enter VAULT app">
+        <span class="vault-hub-rim" aria-hidden="true"></span>
+        <span class="vault-hub-face" aria-hidden="true">
+          <img src="assets/logo2.png" alt="VAULT" />
+        </span>
+        <span class="vault-hub-label">Enter VAULT</span>
       </button>
+
     </div>
 
     <div class="app-layout">
@@ -340,6 +435,7 @@
                   <button class="button primary" id="freezeBtn">Freeze card</button>
                   <button class="button soft" id="revealPinBtn">Reveal PIN</button>
                   <button class="button soft" id="revealCvvBtn">Reveal CVV</button>
+                  <button class="button ghost" id="requestReplacementBtn">Request replacement</button>
                 </div>
                 <dl class="details">
                   <dt>Status</dt><dd id="cardStatus">Active</dd>
@@ -476,18 +572,31 @@
                 </div>
                 <p class="form-note" id="profileNote"></p>
               </section>
-              <!-- Identity + bank -->
+              <!-- Identity + bank (dynamic) -->
               <section class="panel">
                 <h3>Verification status</h3>
-                <div class="verify-list">
-                  <div class="verify-row complete"><span class="verify-icon">✓</span><div><strong>Email verified</strong><small>sarah@vault.au</small></div></div>
-                  <div class="verify-row complete"><span class="verify-icon">✓</span><div><strong>Phone verified</strong><small>+61 4xx xxx xxx</small></div></div>
-                  <div class="verify-row complete"><span class="verify-icon">✓</span><div><strong>Identity (AML/DOB)</strong><small>Passed · May 2026</small></div></div>
-                  <div class="verify-row complete"><span class="verify-icon">✓</span><div><strong>Bank account linked</strong><small>CommonBank ····4821</small></div></div>
+                <div class="verify-list" id="verifyList">
+                  <div class="verify-row complete"><span class="verify-icon">✓</span><div><strong>Loading…</strong></div></div>
                 </div>
                 <p class="form-note" style="margin-top:12px">Trust score reflects verification status and account activity.</p>
               </section>
             </div>
+            <!-- Notification preferences -->
+            <div class="two-col" style="margin-top:24px">
+              <section class="panel">
+                <h3>Notification preferences</h3>
+                <div id="notificationsPanel" class="verify-list"></div>
+                <div class="action-row" style="margin-top:14px">
+                  <button class="button soft" id="saveNotificationsBtn">Save preferences</button>
+                </div>
+                <p class="form-note" id="notifNote"></p>
+              </section>
+              <section class="panel">
+                <h3>Linked banks</h3>
+                <div id="linkedBanksList" class="verify-list"></div>
+              </section>
+            </div>
+
             <!-- Security log -->
             <div class="section-heading" style="margin-top:28px">
               <h2>Security log</h2>
@@ -497,6 +606,24 @@
           </section>
         </section>
       </main>
+    </div>
+
+    <!-- Transaction detail overlay -->
+    <div class="app-overlay hidden" id="txDetailOverlay">
+      <div class="overlay-card">
+        <h3 id="txDetailName">Transaction details</h3>
+        <div id="txDetailRows" class="review-rows"></div>
+        <div class="split-form" style="margin-top:14px">
+          <label class="app-label">Note <input id="txDetailNote" placeholder="Add a note…" /></label>
+          <label class="app-label">Category <input id="txDetailCategory" placeholder="e.g. Groceries" /></label>
+        </div>
+        <p id="txDetailDisputeNote" class="form-note hidden" style="color:var(--c-rose);margin-top:10px">This transaction is currently flagged as disputed.</p>
+        <div class="overlay-actions" style="margin-top:16px;flex-wrap:wrap;gap:8px">
+          <button class="button ghost" id="txDetailDisputeBtn">Flag as dispute</button>
+          <button class="button soft" id="txDetailSaveBtn">Save changes</button>
+          <button class="button primary" id="txDetailCloseBtn">Close</button>
+        </div>
+      </div>
     </div>
 
     <!-- Invest buy/sell overlay -->

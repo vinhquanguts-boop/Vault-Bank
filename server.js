@@ -90,7 +90,8 @@ function userState(db, userId) {
     settings: db.settings,
     recipients: (db.recipients || {})[userId] || [],
     investments: (db.investments || {})[userId] || { crypto: [], history: [] },
-    marketPrices: db.marketPrices || {}
+    marketPrices: db.marketPrices || {},
+    transferReceipts: (db.transferReceipts || {})[userId] || []
   };
 }
 
@@ -113,7 +114,22 @@ function addTransaction(db, userId, title, category, amount, type = amount >= 0 
     amount: Number(amount),
     type,
     date: "Just now",
+    status: "active",
+    note: "",
     ...extra
+  });
+}
+
+/* Re-calculate each budget's spent total directly from matching transactions */
+function syncBudgetsFromTransactions(db, userId) {
+  const budgets = db.budgets[userId] || [];
+  const txs = db.transactions[userId] || [];
+  const SKIP = new Set(["Savings", "Metals", "Transfer", "Split", "Investment", "Income"]);
+  budgets.forEach(b => { b.spent = 0; });
+  txs.forEach(tx => {
+    if (tx.amount >= 0 || SKIP.has(tx.category)) return;
+    const b = budgets.find(b2 => b2.name.toLowerCase() === tx.category.toLowerCase());
+    if (b) b.spent = Number((b.spent + Math.abs(tx.amount)).toFixed(2));
   });
 }
 
@@ -128,6 +144,7 @@ function updateSpendTotals(db, userId) {
   const goals = savings.goals || [];
   const goalTotal = goals.reduce((s, g) => s + (g.current || 0), 0);
   user.saved = Number((savings.flexible * 0.065 / 12 + savings.fixed * 0.085 / 12 + goalTotal * 0.02 / 12).toFixed(2));
+  syncBudgetsFromTransactions(db, userId);
 }
 
 async function api(req, res) {
@@ -178,7 +195,10 @@ async function api(req, res) {
       spent: 0,
       saved: 0,
       trustScore: 72,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      identity: { email: true, phone: false, aml: false },
+      linkedBanks: [],
+      notifications: { transfers: true, budgetAlerts: true, savingsUpdates: true, securityAlerts: true }
     };
     db.users.push(user);
     db.budgets[userId] = [
@@ -353,15 +373,29 @@ async function api(req, res) {
       if (!name) return json(res, 400, { error: "Split name is required." });
       if (totalAmount <= 0) return json(res, 400, { error: "Enter a valid total amount." });
       if (!friends.length) return json(res, 400, { error: "Add at least one friend." });
+      const splitType = body.splitType || "equal";
+      const myShare   = Number(body.share || 0);
+      const allPeople = [user.name.split(" ")[0] || "You", ...friends];
+      let participants;
+      if (splitType === "equal") {
+        const share = Number((totalAmount / allPeople.length).toFixed(2));
+        participants = allPeople.map((p, i) => ({ name: p, share, paid: i === 0 }));
+      } else {
+        const eachOther = friends.length > 0
+          ? Number(((totalAmount - myShare) / friends.length).toFixed(2))
+          : 0;
+        participants = allPeople.map((p, i) => ({ name: p, share: i === 0 ? myShare : eachOther, paid: i === 0 }));
+      }
       db.splits[user.id] ||= [];
       db.splits[user.id].unshift({
         id: genId("s"),
         name,
-        amount: Number(body.share || 0),
+        amount: myShare,
         totalAmount,
         friend: friends.join(", "),
-        splitType: body.splitType || "equal",
+        splitType,
         status: body.paidByMe ? "owed" : "owe",
+        participants,
         date: new Date().toISOString()
       });
       logAction(db, "split", `${user.email} created split "${name}"`);
@@ -489,6 +523,45 @@ async function api(req, res) {
       user.balance += amount;
       addTransaction(db, user.id, body.title || "Manual transaction", body.category || "General", amount);
       logAction(db, "transaction", `${user.email} added "${body.title || "transaction"}"`);
+    }
+
+    /* ── Transactions: edit note / category ──────────────────────────── */
+    if (body.type === "edit-transaction") {
+      const tx = (db.transactions[user.id] || []).find(t => t.id === body.txId);
+      if (!tx) return json(res, 404, { error: "Transaction not found." });
+      if (body.note !== undefined) tx.note = String(body.note);
+      if (body.category && String(body.category).trim()) tx.category = String(body.category).trim();
+      syncBudgetsFromTransactions(db, user.id);
+      logAction(db, "transaction", `${user.email} edited "${tx.title}"`);
+    }
+
+    /* ── Transactions: dispute ────────────────────────────────────────── */
+    if (body.type === "dispute-transaction") {
+      const tx = (db.transactions[user.id] || []).find(t => t.id === body.txId);
+      if (!tx) return json(res, 404, { error: "Transaction not found." });
+      tx.status = tx.status === "disputed" ? "active" : "disputed";
+      logAction(db, "transaction", `${user.email} ${tx.status === "disputed" ? "disputed" : "cleared dispute on"} "${tx.title}"`);
+    }
+
+    /* ── Card: request replacement ────────────────────────────────────── */
+    if (body.type === "request-card-replacement") {
+      const card = db.cards[user.id];
+      if (!card) return json(res, 404, { error: "Card not found." });
+      card.replacementRequested = true;
+      card.replacementRequestedAt = new Date().toISOString();
+      const eta = new Date();
+      eta.setDate(eta.getDate() + 5);
+      card.replacementEta = eta.toISOString().slice(0, 10);
+      logAction(db, "card", `${user.email} requested a card replacement`);
+    }
+
+    /* ── Notifications: edit preferences ─────────────────────────────── */
+    if (body.type === "edit-notifications") {
+      user.notifications ||= {};
+      ["transfers", "budgetAlerts", "savingsUpdates", "securityAlerts"].forEach(k => {
+        if (body[k] !== undefined) user.notifications[k] = Boolean(body[k]);
+      });
+      logAction(db, "profile", `${user.email} updated notification preferences`);
     }
 
     /* ── Profile: edit ────────────────────────────────────────────────── */
@@ -662,6 +735,39 @@ async function api(req, res) {
       }
     }
 
+    if (body.section === "tx-edit") {
+      const txs = db.transactions[body.userId] || [];
+      const tx  = txs.find(t => t.id === body.txId);
+      if (tx && ["note", "category", "status"].includes(body.field)) {
+        tx[body.field] = body.value;
+        if (body.field === "category") syncBudgetsFromTransactions(db, body.userId);
+        logAction(db, "admin", `Admin edited tx "${tx.title}" ${body.field}`);
+      }
+    }
+
+    if (body.section === "market-price") {
+      const sym = String(body.symbol || "");
+      const val = Number(body.value || 0);
+      if (sym && val > 0) {
+        db.marketPrices ||= {};
+        db.marketPrices[sym] ||= {};
+        db.marketPrices[sym].aud = val;
+        if (sym === "gold")   db.settings.goldAud   = val;
+        if (sym === "silver") db.settings.silverAud = val;
+        logAction(db, "admin", `Updated ${sym} price → A$${val}`);
+      }
+    }
+
+    if (body.section === "invest-holding") {
+      const sym  = String(body.symbol || "");
+      const inv  = (db.investments || {})[body.userId];
+      const item = inv?.crypto?.find(c => c.symbol === sym);
+      if (item && ["quantity", "averageBuyPrice"].includes(body.field)) {
+        item[body.field] = Number(body.value);
+        logAction(db, "admin", `Updated ${sym} ${body.field} for ${body.userId}`);
+      }
+    }
+
     if (body.section === "split") {
       const splits = db.splits[body.userId] || [];
       const split = splits.find(s => s.id === body.splitId);
@@ -683,11 +789,14 @@ async function api(req, res) {
     if (body.section === "reset-demo") {
       const user = db.users.find(u => u.id === "u1");
       if (user) {
-        user.balance = 16032.05;
+        user.balance       = 16032.05;
         user.monthlyIncome = 8686;
-        user.spent = 4000;
-        user.saved = 850;
-        user.trustScore = 78;
+        user.spent         = 4000;
+        user.saved         = 850;
+        user.trustScore    = 78;
+        user.identity      = { email: true, phone: true, aml: true };
+        user.linkedBanks   = [{ id: "lb1", name: "CommonBank", bsb: "062-000", last4: "4821", status: "active" }];
+        user.notifications = { transfers: true, budgetAlerts: true, savingsUpdates: true, securityAlerts: true };
       }
       db.metals["u1"] = { gold: 12.42, silver: 38 };
       db.savings["u1"] = {
@@ -698,7 +807,47 @@ async function api(req, res) {
           { id: "g3", name: "New laptop",     current:  620, target: 2100, createdAt: "2026-05-20T00:00:00.000Z" }
         ]
       };
-      db.cards["u1"] = { holder: "Sarah Chen", last4: "8821", pin: "4821", cvv: "482", dailyLimit: 5000, frozen: false, status: "Active" };
+      db.cards["u1"] = {
+        holder: "Sarah Chen", last4: "8821", pin: "4821", cvv: "482",
+        dailyLimit: 5000, frozen: false, status: "Active",
+        replacementRequested: false, replacementEta: null
+      };
+      db.splits["u1"] = [
+        {
+          id: "s1", name: "Dinner at Kumo", friend: "Mia", amount: 42.5,
+          totalAmount: 85, splitType: "equal", status: "owed",
+          participants: [
+            { name: "Sarah Chen", share: 42.5, paid: true },
+            { name: "Mia",        share: 42.5, paid: false }
+          ]
+        },
+        {
+          id: "s2", name: "Beach house", friend: "Noah, Alex", amount: 118,
+          totalAmount: 354, splitType: "equal", status: "settled",
+          settledAt: "2026-06-06T10:41:53.287Z",
+          participants: [
+            { name: "Sarah Chen", share: 118, paid: true },
+            { name: "Noah",       share: 118, paid: true },
+            { name: "Alex",       share: 118, paid: true }
+          ]
+        },
+        {
+          id: "s3", name: "Coffee run", friend: "Ava", amount: 7.8,
+          totalAmount: 15.6, splitType: "equal", status: "owed",
+          participants: [
+            { name: "Sarah Chen", share: 7.8, paid: true },
+            { name: "Ava",        share: 7.8, paid: false }
+          ]
+        }
+      ];
+      db.transactions["u1"] = [
+        { id: "t1", title: "Salary March", category: "Income",    amount:  8888,   type: "income",   date: "Today",     note: "", status: "active" },
+        { id: "t2", title: "Woolworths",   category: "Groceries", amount:  -87.54, type: "expense",  date: "Today",     note: "", status: "active" },
+        { id: "t3", title: "BBQ",          category: "Dining",    amount:  -234,   type: "expense",  date: "Today",     note: "", status: "active" },
+        { id: "t4", title: "Auto-save",    category: "Savings",   amount:  -50,    type: "transfer", date: "Yesterday", note: "", status: "active" }
+      ];
+      db.recipients["u1"]       = [];
+      db.transferReceipts["u1"] = [];
       db.investments ||= {};
       db.investments["u1"] = {
         crypto: [
@@ -711,7 +860,7 @@ async function api(req, res) {
           { id: "ih3", asset: "ETH", type: "buy", quantity: 0.5,   price: 5200,  date: "2026-06-02" }
         ]
       };
-      db.marketPrices = { gold: { aud: 3318.2 }, silver: { aud: 38.4 }, BTC: { aud: 158000 }, ETH: { aud: 5600 } };
+      db.marketPrices       = { gold: { aud: 3318.2 }, silver: { aud: 38.4 }, BTC: { aud: 158000 }, ETH: { aud: 5600 } };
       db.settings.goldAud   = 3318.2;
       db.settings.silverAud = 38.4;
       logAction(db, "admin", "Demo data reset to factory defaults");

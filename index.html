@@ -5,12 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>VAULT Bank</title>
     <link rel="icon" href="assets/logo2.png" />
-    <link rel="stylesheet" href="styles.css?v=20260605-app-clarity" />
+    <link rel="stylesheet" href="styles.css?v=20260606-inner-ring" />
   </head>
   <body class="site-shell">
     <div class="vault-intro" data-vault-intro>
 
-      <!-- ① Corridor tunnel - 4 concentric frames + warm interior vault light -->
+      <!-- ① Chamber atmosphere — dark stone/metal backdrop -->
+      <span class="vault-chamber-backdrop" aria-hidden="true"></span>
+
+      <!-- ② Corridor depth — receding tunnel frames + vault glow -->
       <span class="vi-corridor" aria-hidden="true">
         <span class="vi-frame vi-f1"></span>
         <span class="vi-frame vi-f2"></span>
@@ -20,59 +23,85 @@
         <span class="vi-ray vi-ray-tr"></span>
         <span class="vi-ray vi-ray-bl"></span>
         <span class="vi-ray vi-ray-br"></span>
-        <!-- Warm amber glow from deep inside the vault -->
         <span class="vi-vault-light" aria-hidden="true"></span>
       </span>
 
-      <!-- ② Vault door panels - dial on left, lever handle on right -->
-      <span class="vault-door vault-door-left" aria-hidden="true">
-        <!-- Raised inset panel - structural detail on door face -->
-        <span class="door-panel-inset" aria-hidden="true"></span>
-        <!-- Combination dial mounted on this door face (moves with door on open) -->
-        <span class="vault-dial-wrap">
-          <span class="vault-dial">
-            <span class="dial-spoke dial-spoke-0"></span>
-            <span class="dial-spoke dial-spoke-1"></span>
-            <span class="dial-spoke dial-spoke-2"></span>
-            <span class="dial-spoke dial-spoke-3"></span>
-            <span class="dial-hub"></span>
-            <span class="dial-handle"></span>
-          </span>
-          <!-- Stationary indicator arrow - does not spin with dial -->
-          <span class="dial-indicator" aria-hidden="true"></span>
+      <!-- ③ Brand nameplate — institution mark above the door -->
+      <span class="vi-brand-plate" aria-hidden="true">VAULT BANK</span>
+
+      <!-- ④ Heavy antique brass door frame — corner + mid-edge bolts -->
+      <span class="vault-door-frame" aria-hidden="true">
+        <span class="vdf-corner vdf-c1" aria-hidden="true"></span>
+        <span class="vdf-corner vdf-c2" aria-hidden="true"></span>
+        <span class="vdf-corner vdf-c3" aria-hidden="true"></span>
+        <span class="vdf-corner vdf-c4" aria-hidden="true"></span>
+        <span class="vdf-bolt vdf-bt" aria-hidden="true"></span>
+        <span class="vdf-bolt vdf-bb" aria-hidden="true"></span>
+        <span class="vdf-bolt vdf-bl" aria-hidden="true"></span>
+        <span class="vdf-bolt vdf-br" aria-hidden="true"></span>
+      </span>
+
+      <!-- ⑤ Rectangular door — two heavy panels that swing into the vault -->
+      <span class="vault-door-wrap" aria-hidden="true">
+        <span class="vault-door-panel vault-door-left" aria-hidden="true">
+          <span class="vdp-bevel" aria-hidden="true"></span>
+          <span class="vdp-inset" aria-hidden="true"></span>
+          <span class="vdp-band vdp-band-1" aria-hidden="true"></span>
+          <span class="vdp-band vdp-band-2" aria-hidden="true"></span>
+          <span class="vdp-band vdp-band-3" aria-hidden="true"></span>
+          <span class="vault-bolt-bar vbb-t" aria-hidden="true"></span>
+          <span class="vault-bolt-bar vbb-m" aria-hidden="true"></span>
+          <span class="vault-bolt-bar vbb-b" aria-hidden="true"></span>
+        </span>
+        <span class="vault-door-panel vault-door-right" aria-hidden="true">
+          <span class="vdp-bevel" aria-hidden="true"></span>
+          <span class="vdp-inset" aria-hidden="true"></span>
+          <span class="vdp-band vdp-band-1" aria-hidden="true"></span>
+          <span class="vdp-band vdp-band-2" aria-hidden="true"></span>
+          <span class="vdp-band vdp-band-3" aria-hidden="true"></span>
+          <span class="vault-bolt-bar vbb-t" aria-hidden="true"></span>
+          <span class="vault-bolt-bar vbb-m" aria-hidden="true"></span>
+          <span class="vault-bolt-bar vbb-b" aria-hidden="true"></span>
         </span>
       </span>
-      <span class="vault-door vault-door-right" aria-hidden="true">
-        <!-- Raised inset panel - structural detail on door face -->
-        <span class="door-panel-inset" aria-hidden="true"></span>
-        <!-- Lever handle on right door (moves with door on open) -->
-        <span class="vault-door-handle" aria-hidden="true"></span>
+
+      <!-- ⑥ Eight radiating lock arms — retract before door opens -->
+      <span class="vault-locker" aria-hidden="true">
+        <span class="vault-lock-arm vault-lock-arm-1"></span>
+        <span class="vault-lock-arm vault-lock-arm-2"></span>
+        <span class="vault-lock-arm vault-lock-arm-3"></span>
+        <span class="vault-lock-arm vault-lock-arm-4"></span>
+        <span class="vault-lock-arm vault-lock-arm-5"></span>
+        <span class="vault-lock-arm vault-lock-arm-6"></span>
+        <span class="vault-lock-arm vault-lock-arm-7"></span>
+        <span class="vault-lock-arm vault-lock-arm-8"></span>
       </span>
 
-      <!-- ② b  Horizontal locking bolt bars that cross the seam -->
-      <span class="vault-door-bolts" aria-hidden="true">
-        <span class="vdb vdb-1"></span>
-        <span class="vdb vdb-2"></span>
-        <span class="vdb vdb-3"></span>
-      </span>
+      <!-- ⑦ Seam light — warm gold crack along the vertical centre -->
+      <span class="vault-seam-light" aria-hidden="true"></span>
 
-      <!-- ③ Centre seam + decorative seam rivets -->
-      <span class="vault-seam"                   aria-hidden="true"></span>
-      <span class="vault-bolt vault-bolt-top"    aria-hidden="true"></span>
-      <span class="vault-bolt vault-bolt-bottom" aria-hidden="true"></span>
-
-      <!-- ④ Walk-through light burst (fires on opening) -->
+      <!-- ⑧ Walk-through burst -->
       <span class="vi-burst" aria-hidden="true"></span>
 
-      <!-- ⑤ Floating dust motes - atmospheric depth -->
+      <!-- ⑨ Entry glow — amber warmth floods in as door opens -->
+      <span class="vault-entry-glow" aria-hidden="true"></span>
+
+      <!-- ⑩ Floating dust motes — atmospheric depth -->
       <span class="vi-dust" aria-hidden="true">
         <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i>
       </span>
 
-      <!-- ⑥ Trigger -->
-      <button class="vault-intro-logo" type="button" aria-label="Enter VAULT">
-        <img src="assets/logo2.png" alt="VAULT" />
-        <span>Enter VAULT</span>
+      <!-- ⑪ Outer combination lock tick ring -->
+      <span class="vault-hub-ticks" aria-hidden="true"></span>
+
+      <!-- ⑫ Hub dial — combination lock trigger, mounted at door seam -->
+      <button class="vault-core-hub" type="button" aria-label="Enter VAULT">
+        <span class="vault-hub-rim"  aria-hidden="true"></span>
+        <span class="vault-hub-face" aria-hidden="true">
+          <img src="assets/logo2.png" alt="VAULT" />
+        </span>
+        <span class="vault-hub-label">Enter VAULT</span>
       </button>
 
     </div>

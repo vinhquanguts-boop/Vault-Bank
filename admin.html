@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>VAULT Admin Control</title>
     <link rel="icon" href="assets/logo2.png" />
-    <link rel="stylesheet" href="styles.css?v=20260605-app-clarity" />
+    <link rel="stylesheet" href="styles.css?v=20260608-admin-ext" />
   </head>
   <body class="admin-page">
     <header class="topbar">
@@ -27,11 +27,13 @@
 
       <div class="admin-tabs">
         <button class="active" data-admin-tab="overview">Overview</button>
+        <button data-admin-tab="transactions">Transactions</button>
         <button data-admin-tab="budgets">Budgets</button>
         <button data-admin-tab="metals">Metals</button>
         <button data-admin-tab="splits">Splits</button>
         <button data-admin-tab="goals">Goals</button>
         <button data-admin-tab="cards">Cards</button>
+        <button data-admin-tab="investments">Investments</button>
         <button data-admin-tab="actions">Action log</button>
       </div>
 
@@ -50,6 +52,15 @@
             <h2>Recent transactions</h2>
             <div class="list" id="adminTransactions"></div>
           </article>
+        </div>
+      </section>
+
+      <!-- Transactions tab -->
+      <section class="admin-tab-panel hidden" id="adminTab-transactions">
+        <div class="panel">
+          <h2>Transactions</h2>
+          <p class="form-note" style="margin-bottom:12px">Click a row to edit note, category, or dispute status.</p>
+          <div id="adminTransactionsList"></div>
         </div>
       </section>
 
@@ -93,6 +104,14 @@
         </div>
       </section>
 
+      <!-- Investments tab -->
+      <section class="admin-tab-panel hidden" id="adminTab-investments">
+        <div class="panel">
+          <h2>Investments &amp; market prices</h2>
+          <div id="adminInvestments"></div>
+        </div>
+      </section>
+
       <!-- Action log tab -->
       <section class="admin-tab-panel hidden" id="adminTab-actions">
         <div class="panel">
@@ -100,11 +119,15 @@
           <div class="admin-log-filters">
             <button class="active" data-log-filter="all">All</button>
             <button data-log-filter="login">Login</button>
+            <button data-log-filter="transaction">Transactions</button>
+            <button data-log-filter="budget">Budgets</button>
+            <button data-log-filter="savings">Savings</button>
             <button data-log-filter="metals">Metals</button>
             <button data-log-filter="transfer">Transfer</button>
-            <button data-log-filter="savings">Savings</button>
             <button data-log-filter="split">Splits</button>
+            <button data-log-filter="invest">Invest</button>
             <button data-log-filter="card">Card</button>
+            <button data-log-filter="profile">Profile</button>
             <button data-log-filter="admin">Admin</button>
           </div>
           <div class="list" id="adminActions"></div>

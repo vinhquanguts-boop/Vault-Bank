@@ -37,11 +37,13 @@ function renderAll() {
   renderUsers();
   renderSettings();
   renderTransactions();
+  renderTransactionsAdmin();
   renderBudgets();
   renderMetals();
   renderSplits();
   renderGoals();
   renderCards();
+  renderInvestments();
   renderActions();
 }
 
@@ -97,6 +99,87 @@ function renderTransactions() {
       <strong class="${tx.amount >= 0 ? "positive" : "negative"}">${tx.amount >= 0 ? "+" : ""}${money(tx.amount)}</strong>
     </div>
   `).join("") || `<p class="form-note">No transactions.</p>`;
+}
+
+/* ── Transactions (editable admin list) ──────────────────────────────── */
+function renderTransactionsAdmin() {
+  const el = $("#adminTransactionsList");
+  if (!el) return;
+  const rows = Object.entries(db.transactions).flatMap(([userId, items]) => {
+    const user = db.users.find(u => u.id === userId);
+    return items.map(tx => ({ ...tx, userId, userName: user?.name || userId }));
+  });
+  if (!rows.length) { el.innerHTML = `<p class="form-note">No transactions.</p>`; return; }
+  el.innerHTML = rows.slice(0, 40).map(tx => `
+    <div class="admin-tx-row">
+      <div class="admin-tx-meta">
+        <span class="${tx.amount >= 0 ? 'positive' : 'negative'}">${tx.amount >= 0 ? '+' : ''}${money(tx.amount)}</span>
+        <strong>${tx.title}</strong>
+        <small>${tx.userName} · ${tx.date}</small>
+      </div>
+      <div class="admin-tx-fields">
+        <label class="admin-inline-field">Category
+          <input value="${tx.category}" data-section="tx-edit" data-userid="${tx.userId}" data-txid="${tx.id}" data-field="category" style="width:110px" />
+          <button class="button soft small" data-admin-save="tx-edit:${tx.userId}:${tx.id}:category">Save</button>
+        </label>
+        <label class="admin-inline-field">Note
+          <input value="${tx.note || ''}" data-section="tx-edit" data-userid="${tx.userId}" data-txid="${tx.id}" data-field="note" style="width:130px" placeholder="—" />
+          <button class="button soft small" data-admin-save="tx-edit:${tx.userId}:${tx.id}:note">Save</button>
+        </label>
+        <label class="admin-inline-field">Status
+          <select data-section="tx-edit" data-userid="${tx.userId}" data-txid="${tx.id}" data-field="status">
+            <option ${(tx.status || 'active') === 'active'   ? 'selected' : ''}>active</option>
+            <option ${(tx.status || 'active') === 'disputed' ? 'selected' : ''}>disputed</option>
+          </select>
+          <button class="button soft small" data-admin-save="tx-edit:${tx.userId}:${tx.id}:status">Save</button>
+        </label>
+      </div>
+    </div>`).join('');
+}
+
+/* ── Investments ──────────────────────────────────────────────────────── */
+function renderInvestments() {
+  const el = $("#adminInvestments");
+  if (!el) return;
+  const sections = Object.entries(db.investments || {}).map(([userId, inv]) => {
+    const user = db.users.find(u => u.id === userId);
+    const prices = db.marketPrices || {};
+
+    const cryptoRows = (inv.crypto || []).map(c => {
+      const price = (prices[c.symbol] || {}).aud || 0;
+      const val   = c.quantity * price;
+      const gl    = val - c.quantity * (c.averageBuyPrice || 0);
+      return `
+        <div class="admin-data-row">
+          <span class="admin-data-label">${c.name} (${c.symbol})</span>
+          <span>${c.quantity.toFixed(6)} · ${money(val)} · <span class="${gl >= 0 ? 'positive' : 'negative'}">${gl >= 0 ? '+' : ''}${money(gl)}</span></span>
+          <label class="admin-inline-field">Avg buy price
+            <input value="${c.averageBuyPrice}" data-section="invest-holding" data-userid="${userId}" data-symbol="${c.symbol}" data-field="averageBuyPrice" style="width:90px" />
+            <button class="button soft small" data-admin-save="invest-holding:${userId}:${c.symbol}:averageBuyPrice">Save</button>
+          </label>
+          <label class="admin-inline-field">Quantity
+            <input value="${c.quantity}" data-section="invest-holding" data-userid="${userId}" data-symbol="${c.symbol}" data-field="quantity" style="width:90px" />
+            <button class="button soft small" data-admin-save="invest-holding:${userId}:${c.symbol}:quantity">Save</button>
+          </label>
+        </div>`;
+    }).join('');
+
+    const priceRows = Object.entries(prices).map(([sym, p]) => `
+      <label class="admin-field">
+        <span>${sym} price (AUD)</span>
+        <input value="${p.aud}" data-setting="marketPrice" data-symbol="${sym}" />
+        <button class="button soft small" data-update-market-price="${sym}">Save</button>
+      </label>`).join('');
+
+    return `
+      <div class="admin-user">
+        <h3>${user?.name || userId} — Holdings</h3>
+        ${cryptoRows || '<p class="form-note">No crypto holdings.</p>'}
+        <h3 style="margin-top:18px">Market prices</h3>
+        ${priceRows}
+      </div>`;
+  }).join('');
+  el.innerHTML = sections || `<p class="form-note">No investment data.</p>`;
 }
 
 /* ── Budgets ──────────────────────────────────────────────────────────── */
@@ -310,6 +393,53 @@ document.addEventListener("click", async event => {
         body: JSON.stringify({ section: "settings", field: t.dataset.updateSetting, value: input.value })
       });
       renderAll(); toast("Setting saved.");
+    } catch (err) { toast(err.message); }
+    return;
+  }
+
+  /* Market price save */
+  if (t.dataset.updateMarketPrice) {
+    const sym   = t.dataset.updateMarketPrice;
+    const input = document.querySelector(`[data-symbol="${sym}"][data-setting="marketPrice"]`);
+    if (!input) return toast("Could not find input.");
+    try {
+      db = await api("/api/admin/update", {
+        method: "POST",
+        body: JSON.stringify({ section: "market-price", symbol: sym, value: input.value })
+      });
+      renderAll(); toast("Market price saved.");
+    } catch (err) { toast(err.message); }
+    return;
+  }
+
+  /* Investment holding edit */
+  if (t.dataset.adminSave?.startsWith("invest-holding:")) {
+    const [, userId, symbol, field] = t.dataset.adminSave.split(":");
+    const inputEl = t.closest(".admin-data-row")
+      ?.querySelector(`input[data-field="${field}"][data-symbol="${symbol}"]`);
+    if (!inputEl) return toast("Could not find input.");
+    try {
+      db = await api("/api/admin/update", {
+        method: "POST",
+        body: JSON.stringify({ section: "invest-holding", userId, symbol, field, value: inputEl.value })
+      });
+      renderAll(); toast("Saved.");
+    } catch (err) { toast(err.message); }
+    return;
+  }
+
+  /* Transaction edit */
+  if (t.dataset.adminSave?.startsWith("tx-edit:")) {
+    const [, userId, txId, field] = t.dataset.adminSave.split(":");
+    const inputEl = t.closest(".admin-tx-fields")
+      ?.querySelector(`input[data-field="${field}"], select[data-field="${field}"]`);
+    if (!inputEl) return toast("Could not find input.");
+    try {
+      db = await api("/api/admin/update", {
+        method: "POST",
+        body: JSON.stringify({ section: "tx-edit", userId, txId, field, value: inputEl.value })
+      });
+      renderAll(); toast("Saved.");
     } catch (err) { toast(err.message); }
     return;
   }

@@ -58,16 +58,17 @@ body {
   color: var(--rose-900);
 }
 
-/* ─── VAULT INTRO - WALK THROUGH THE VAULT ────────────────────────────── */
+/* ─── VAULT INTRO — LUXURY RECTANGULAR VAULT DOOR ──────────────────────── */
 
 /*
-  Animation sequence:
-  0ms   → Dark void. Corridor tunnel fades in, combination wheel spins idly.
-  140ms → Logo + "Enter VAULT" materialise at end of corridor.
-  click → Phase 1: Bolts retract, seam cracks gold, doors swing open.
-  +400ms → Phase 2: WALK-THROUGH - entire scene rushes toward viewer (scale + brighten).
-  +900ms → Blinding light flash, then fade to white → website.
-  +1200ms → Website content scales in from slightly below, blur clears.
+  Phases (index.html only):
+  180ms   → is-ready    : frame, panels, hub materialise
+  click   → is-dialing  : hub rim spins fast, dial ticks
+  +900ms  → is-unlocking: bolt bars retract, 8 lock arms collapse
+  +1800ms → is-cracking : seam blazes gold, inner light swells
+  +2150ms → is-opening  : panels swing apart on outer hinges
+  +2550ms → is-walking  : camera rushes forward through light
+  +3350ms → is-gone     : overlay fades, DOM removed +400ms later
 */
 
 /* ── Base overlay ── */
@@ -78,26 +79,92 @@ body {
   display: grid;
   place-items: center;
   overflow: hidden;
-  background: #080306;
-  /* Fade handled by JS class toggle */
+  /* Warm deep mahogany — feels like the interior of a private bank */
+  background: radial-gradient(ellipse 110% 110% at 50% 50%,
+    #1c0a10 0%,
+    #110608 38%,
+    #080406 70%,
+    #050304 100%
+  );
   transition: opacity 400ms ease, visibility 0ms linear 400ms;
 }
 
-/* Ambient warm glow (pulses slowly, centres eye) */
+/* Directional centre glow — tight, controlled, private-bank */
 .vault-intro::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse 55% 45% at 50% 50%,
-    rgba(92, 46, 56, 0.60) 0%,
-    rgba(37, 18, 22, 0.40) 50%,
-    transparent 72%);
-  animation: vaultAmbient 3.6s ease-in-out infinite;
+  background: radial-gradient(ellipse 58% 68% at 50% 48%,
+    rgba(96, 42, 52, 0.60) 0%,
+    rgba(58, 22, 32, 0.38) 30%,
+    rgba(22,  8, 14, 0.16) 56%,
+    transparent 78%);
+  animation: vaultAmbient 5s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+/* Soft corner fade — just enough to frame the scene, not darken it */
+.vault-intro::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 75% at 50% 50%,
+    transparent 44%,
+    rgba(0, 0, 0, 0.28) 74%,
+    rgba(0, 0, 0, 0.52) 100%);
   pointer-events: none;
   z-index: 0;
 }
 
-/* ── ① CORRIDOR TUNNEL ──────────────────────────────────────────────────── */
+/* ── ① CHAMBER BACKDROP ─────────────────────────────────────────────────── */
+/*
+ * Five-layer illusion of a private bank vault chamber:
+ * stone coursing / vertical panel joints / recessed alcove / floor reflection / side columns
+ */
+.vault-chamber-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    /* Horizontal stone coursing — subtle masonry rhythm */
+    repeating-linear-gradient(
+      0deg,
+      rgba(255,255,255,0.0045) 0px 1px,
+      transparent 1px 72px
+    ),
+    /* Vertical wall-panel joints — dressed stone or dark wainscot */
+    repeating-linear-gradient(
+      90deg,
+      rgba(0,0,0,0.10) 0px 1px,
+      transparent 1px 200px
+    ),
+    /* Recessed alcove — the wall recess behind the door, darker at centre */
+    radial-gradient(
+      ellipse 46% 74% at 50% 47%,
+      rgba(0,0,0,0.42) 0%,
+      transparent 72%
+    ),
+    /* Floor warm reflection — amber cast on floor below the gate */
+    linear-gradient(
+      to top,
+      rgba(68, 34, 12, 0.20) 0%,
+      rgba(40, 18,  6, 0.08) 16%,
+      transparent 30%
+    ),
+    /* Side column shadows — walls recede into darkness on each side */
+    linear-gradient(
+      to right,
+      rgba(0,0,0,0.58) 0%,
+      rgba(0,0,0,0.16) 20%,
+      transparent 40%,
+      transparent 60%,
+      rgba(0,0,0,0.16) 80%,
+      rgba(0,0,0,0.58) 100%
+    );
+}
+
+/* ── ② CORRIDOR TUNNEL ──────────────────────────────────────────────────── */
 .vi-corridor {
   position: absolute;
   inset: 0;
@@ -105,372 +172,496 @@ body {
   z-index: 1;
 }
 
-/* Four concentric rectangular frames = the tunnel walls receding to vanishing point */
 .vi-frame {
   position: absolute;
   border-style: solid;
-  border-color: rgba(92, 46, 56, 0.72);
+  border-color: rgba(72, 34, 42, 0.58);
   box-sizing: border-box;
 }
-.vi-f1 { inset: 0;     border-width: 18px; background: rgba(20,8,12,0.20); }
-.vi-f2 { inset: 7.5%;  border-width: 13px; background: rgba(20,8,12,0.12); border-color: rgba(92,46,56,0.55); }
-.vi-f3 { inset: 15%;   border-width: 9px;  background: rgba(20,8,12,0.08); border-color: rgba(92,46,56,0.38); }
-.vi-f4 { inset: 22.5%; border-width: 6px;  background: rgba(20,8,12,0.05); border-color: rgba(92,46,56,0.24); }
+.vi-f1 { inset: 0;     border-width: 14px; background: rgba(10,4,7,0.06); border-color: rgba(80,36,46,0.28); box-shadow: inset 0 0 40px rgba(0,0,0,0.32); }
+.vi-f2 { inset: 7.5%;  border-width: 10px; background: rgba(10,4,7,0.04); border-color: rgba(80,36,46,0.22); box-shadow: inset 0 0 26px rgba(0,0,0,0.24); }
+.vi-f3 { inset: 15%;   border-width: 7px;  background: rgba(10,4,7,0.02); border-color: rgba(80,36,46,0.16); box-shadow: inset 0 0 16px rgba(0,0,0,0.18); }
+.vi-f4 { inset: 22.5%; border-width: 5px;  background: transparent;        border-color: rgba(148,100,38,0.22); box-shadow: 0 0 0 1px rgba(168,124,48,0.10), inset 0 0 10px rgba(0,0,0,0.14); }
 
-/* Subtle inner shadow on each frame - makes them feel like thick stone */
-.vi-f1 { box-shadow: inset 0 0 60px rgba(0,0,0,0.6); }
-.vi-f2 { box-shadow: inset 0 0 40px rgba(0,0,0,0.5); }
-.vi-f3 { box-shadow: inset 0 0 24px rgba(0,0,0,0.4); }
-
-/* Diagonal vanishing-point rays - 4 lines from each corner to centre */
 .vi-ray {
   position: absolute;
   width: 1px;
-  height: 141.4%;          /* √2 × 100% - long enough to cross the whole frame */
-  background: linear-gradient(to bottom, rgba(92,46,56,0.35), transparent 55%);
+  height: 141.4%;
+  background: linear-gradient(to bottom, rgba(72,34,42,0.26), transparent 55%);
   transform-origin: top center;
   top: 0;
 }
-.vi-ray-tl { left: 0;    transform: rotate(45deg);  }
-.vi-ray-tr { right: 0;   transform: rotate(-45deg); }
-.vi-ray-bl { left: 0;    bottom: 0; top: auto; transform-origin: bottom center; transform: rotate(-45deg); }
-.vi-ray-br { right: 0;   bottom: 0; top: auto; transform-origin: bottom center; transform: rotate(45deg);  }
+.vi-ray-tl { left: 0;  transform: rotate(45deg); }
+.vi-ray-tr { right: 0; transform: rotate(-45deg); }
+.vi-ray-bl { left: 0;  bottom: 0; top: auto; transform-origin: bottom center; transform: rotate(-45deg); }
+.vi-ray-br { right: 0; bottom: 0; top: auto; transform-origin: bottom center; transform: rotate(45deg); }
 
-/* ── ② VAULT DOOR PANELS ─────────────────────────────────────────────────── */
-.vault-door {
+/* ── ③ BRAND NAMEPLATE ──────────────────────────────────────────────────── */
+/*
+ * Thin all-caps institution name above the door. Fades and slides in with the
+ * door on is-ready; fades out instantly when the door opens.
+ */
+.vi-brand-plate {
   position: absolute;
-  top: 0; height: 100%; width: 50.6%;
+  left: 50%;
+  top: calc(50% - min(40vmin, 292px) - 26px);
+  transform: translateX(-50%) translateY(10px);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.48em;
+  text-transform: uppercase;
+  color: rgba(188,146,78,0.66);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.4s ease 0.55s, transform 1.4s cubic-bezier(0.16,1,0.3,1) 0.55s;
+}
+.vi-brand-plate::before,
+.vi-brand-plate::after {
+  content: "";
+  display: inline-block;
+  width: 30px; height: 1px;
+  background: linear-gradient(to right, transparent, rgba(164,124,50,0.48));
+  margin: 0 13px;
+  flex-shrink: 0;
+}
+.vi-brand-plate::after {
+  background: linear-gradient(to left, transparent, rgba(164,124,50,0.48));
+}
+.vault-intro.is-ready .vi-brand-plate {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.vault-intro.is-opening .vi-brand-plate {
+  opacity: 0;
+  transition: opacity 280ms ease;
+}
+
+/* ── ④ VAULT DOOR FRAME ─────────────────────────────────────────────────── */
+/*
+ * Heavy rectangular antique brass surround — bolted into the stone chamber wall.
+ * Conic gradient gives aged, multi-faceted shimmer across the frame face.
+ */
+.vault-door-frame {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: min(62vmin, 458px);
+  height: min(80vmin, 584px);
+  transform: translate(-50%, -50%) scale(0.86);
+  border: 22px solid transparent;
   background:
-    /* Vertical panel division lines - 3 per door half */
-    repeating-linear-gradient(
-      90deg,
-      rgba(255, 255, 255, 0.024) 0px 1px,
-      rgba(0,   0,   0,   0.10)  1px 2px,
-      transparent                 2px 33.33%
-    ),
-    /* Fine horizontal steel ribs */
+    linear-gradient(rgba(6,2,4,0.14), rgba(6,2,4,0.14)) padding-box,
+    conic-gradient(
+      from 8deg,
+      #180c0e 0deg,   #3e1e12 26deg,
+      #7c5228 65deg,  #a87840 88deg,  #7c5228 112deg,
+      #3e1e12 148deg, #180c0e 178deg,
+      #3e1e12 204deg, #7c5228 245deg,
+      #a87840 266deg, #7c5228 288deg,
+      #3e1e12 328deg, #180c0e 360deg
+    ) border-box;
+  box-shadow:
+    0 0 0 2px rgba(140,100,38,0.16),
+    0 0 0 5px rgba(8,3,5,0.90),
+    0 0 80px rgba(0,0,0,0.82),
+    0 0 130px rgba(140,100,38,0.05),
+    inset 0 0 0 2px rgba(140,100,38,0.08);
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 900ms ease 140ms, transform 900ms cubic-bezier(0.16,1,0.3,1) 140ms;
+}
+.vault-intro.is-ready .vault-door-frame {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+  /* Warm exterior halo — light leaking from inside the vault around the door edges */
+  box-shadow:
+    0 0 0 2px rgba(140,100,38,0.18),
+    0 0 0 5px rgba(8,3,5,0.88),
+    0 0 60px  28px rgba(100,54,22,0.28),
+    0 0 120px 60px rgba(80, 38,14,0.18),
+    0 0 200px 90px rgba(60, 26, 8,0.10),
+    inset 0 0 0 2px rgba(140,100,38,0.10);
+}
+.vault-intro.is-opening .vault-door-frame {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(1.36);
+  transition: opacity 500ms ease 360ms, transform 680ms ease 200ms;
+}
+
+/* Brass corner bolt heads — ornamental studs at each corner of the frame */
+.vdf-corner {
+  position: absolute;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 30%, #d0b060, #7c5228 52%, #2e1002);
+  box-shadow:
+    0 2px 7px rgba(0,0,0,0.70),
+    0 0 0 1px rgba(180,134,52,0.22),
+    inset 0 1px 2px rgba(220,178,106,0.32);
+}
+.vdf-c1 { top: -11px;    left: -11px;  }
+.vdf-c2 { top: -11px;    right: -11px; }
+.vdf-c3 { bottom: -11px; left: -11px;  }
+.vdf-c4 { bottom: -11px; right: -11px; }
+
+/* Mid-edge bolt studs — four mounting points at frame side centres */
+.vdf-bolt {
+  position: absolute;
+  width: 13px; height: 13px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 32%, #c8a652, #7c5228 54%, #2c1002);
+  box-shadow:
+    0 1px 5px rgba(0,0,0,0.65),
+    0 0 0 1px rgba(152,112,40,0.20),
+    inset 0 1px 1px rgba(212,172,92,0.26);
+}
+.vdf-bt { top: -6.5px;    left: 50%; transform: translateX(-50%); }
+.vdf-bb { bottom: -6.5px; left: 50%; transform: translateX(-50%); }
+.vdf-bl { left: -6.5px;   top: 50%;  transform: translateY(-50%); }
+.vdf-br { right: -6.5px;  top: 50%;  transform: translateY(-50%); }
+
+/* ── ⑤ RECTANGULAR DOOR PANELS ──────────────────────────────────────────── */
+/*
+ * Two half-panels side by side inside the brass frame.
+ * Each panel hinges on its outer edge and swings into the vault on is-opening.
+ */
+.vault-door-wrap {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: min(52vmin, 378px);
+  height: min(72vmin, 524px);
+  transform: translate(-50%, -50%) scale(0.86);
+  display: flex;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 800ms ease 260ms, transform 800ms cubic-bezier(0.16,1,0.3,1) 260ms;
+}
+.vault-intro.is-ready .vault-door-wrap {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+.vault-intro.is-opening .vault-door-wrap {
+  opacity: 0;
+  transition: opacity 480ms ease 620ms;
+}
+
+/* Shared panel face — deep aged-iron with grain, etching, and warm blush centre */
+.vault-door-panel {
+  position: relative;
+  flex: 1;
+  overflow: visible;
+  background:
+    /* Fine horizontal steel grain */
     repeating-linear-gradient(
       0deg,
-      rgba(255, 255, 255, 0.022) 0px 1px,
-      transparent                 1px 22px
+      rgba(255,255,255,0.018) 0px 1px,
+      transparent 1px 20px
     ),
-    /* Bold cross-hatch for rolled-steel texture */
+    /* Diagonal brushed metal highlight */
+    repeating-linear-gradient(
+      125deg,
+      rgba(255,255,255,0.009) 0px 1px,
+      transparent 1px 64px
+    ),
+    /* Cross-hatch micro etching — engraved luxury surface */
     repeating-linear-gradient(
       45deg,
-      rgba(255, 255, 255, 0.006) 0px 1px,
-      transparent                 1px 60px
+      rgba(255,255,255,0.005) 0px 1px,
+      transparent 1px 28px
     ),
-    /* Base metallic gradient with a centre highlight band */
+    repeating-linear-gradient(
+      -45deg,
+      rgba(255,255,255,0.005) 0px 1px,
+      transparent 1px 28px
+    ),
+    /* Warm blush at centre — recessed face catching corridor light */
+    radial-gradient(
+      ellipse 90% 55% at 50% 50%,
+      rgba(56,24,32,0.26) 0%,
+      rgba(18, 8,12,0.00) 68%
+    ),
+    /* Base aged-iron gradient — deep cool-black with faint rose undertone */
     linear-gradient(
-      168deg,
-      #1a0a10 0%,
-      #4a2430 20%,
-      #5c2e38 35%,
-      #6b3340 46%,
-      #5c2e38 57%,
-      #3d1c24 74%,
-      #14080c 100%
+      175deg,
+      #0d0509 0%,
+      #1b0b0f 12%,
+      #2a1318 28%,
+      #231018 50%,
+      #170b0e 74%,
+      #0d0509 100%
     );
-  z-index: 2;
-  /* 260ms delay lets bolt bars fully retract before the door swings */
-  transition: transform 720ms cubic-bezier(0.62, 0, 0.10, 1) 260ms;
-  will-change: transform;
 }
 
-/* Inner-edge bevel - catches warm corridor light at the seam */
-.vault-door::before {
+.vault-door-left {
+  transform-origin: left center;
+  box-shadow:
+    inset -6px 0 20px rgba(0,0,0,0.60),
+    inset -1px 0 0   rgba(180,136,60,0.24),
+    inset  1px 0 0   rgba(0,0,0,0.50);
+}
+.vault-door-right {
+  transform-origin: right center;
+  box-shadow:
+    inset  6px 0 20px rgba(0,0,0,0.60),
+    inset  1px 0 0   rgba(180,136,60,0.24),
+    inset -1px 0 0   rgba(0,0,0,0.50);
+}
+
+/* Engraved bevel border inside each panel — recessed decorative surround */
+.vdp-bevel {
+  position: absolute;
+  inset: 11px;
+  border: 1.5px solid rgba(148,108,44,0.24);
+  box-shadow:
+    inset 0 0 16px rgba(0,0,0,0.55),
+    0 0 0 1px rgba(0,0,0,0.30);
+  pointer-events: none;
+}
+/* Tighter inner inset — second engraved line for depth */
+.vdp-inset {
+  position: absolute;
+  inset: 26px;
+  border: 1px solid rgba(118,84,28,0.13);
+  box-shadow: inset 0 0 9px rgba(0,0,0,0.44);
+  pointer-events: none;
+}
+
+/* Horizontal armour bands — seams between plate sections of the door face */
+.vdp-band {
+  position: absolute;
+  left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(to bottom,
+    rgba(0,0,0,0.48) 0%,
+    rgba(0,0,0,0.10) 100%
+  );
+  box-shadow: 0 1px 0 rgba(142,102,40,0.10);
+  pointer-events: none;
+}
+.vdp-band-1 { top: 24%; }
+.vdp-band-2 { top: 48%; }
+.vdp-band-3 { top: 72%; }
+
+/* L-shaped brass corner accents on the panel outer corners */
+.vault-door-left::before,
+.vault-door-left::after,
+.vault-door-right::before,
+.vault-door-right::after {
   content: "";
   position: absolute;
-  top: 0; bottom: 0; width: 8px;
-  background: linear-gradient(to right,
-    rgba(232, 180, 100, 0.42) 0%,
-    rgba(196, 140,  70, 0.18) 45%,
-    transparent 100%
-  );
+  width: 15px; height: 15px;
+  border-style: solid;
+  border-color: rgba(160,118,46,0.46);
+  pointer-events: none;
+  z-index: 1;
+}
+.vault-door-left::before  { top: 16px;    left: 16px;  border-width: 1.5px 0 0 1.5px; }
+.vault-door-left::after   { bottom: 16px; left: 16px;  border-width: 0 0 1.5px 1.5px; }
+.vault-door-right::before { top: 16px;    right: 16px; border-width: 1.5px 1.5px 0 0; }
+.vault-door-right::after  { bottom: 16px; right: 16px; border-width: 0 1.5px 1.5px 0; }
+
+/* Opening: panels pivot on outer hinges, swinging into the vault */
+.vault-intro.is-opening .vault-door-left {
+  transform: perspective(1600px) rotateY(-84deg);
+  transition: transform 1100ms cubic-bezier(0.58,0,0.08,1) 160ms;
+}
+.vault-intro.is-opening .vault-door-right {
+  transform: perspective(1600px) rotateY(84deg);
+  transition: transform 1100ms cubic-bezier(0.58,0,0.08,1) 160ms;
 }
 
-/* Outer vignette - edges fall into shadow, centres lit */
-.vault-door::after {
+/* ── BOLT BARS — seam-edge locking rods ─────────────────────────────────── */
+/*
+ * Short cylindrical rods at the seam edge of each panel.
+ * Left panel: bolts extend right (toward seam). Right panel: bolts extend left.
+ * Retract into the panel body during is-unlocking before the door swings.
+ */
+.vault-bolt-bar {
+  position: absolute;
+  right: -14px;
+  width: 32px; height: 15px;
+  border-radius: 0 8px 8px 0;
+  background:
+    linear-gradient(to bottom,
+      rgba(218,178,118,0.68) 0%,
+      rgba(158,118, 48,0.96) 24%,
+      rgba(198,162,106,0.98) 50%,
+      rgba(158,118, 48,0.90) 76%,
+      rgba( 60, 38,  8,0.84) 100%
+    );
+  box-shadow:
+    3px 1px 8px rgba(0,0,0,0.72),
+    inset 0  1px 0 rgba(220,180,118,0.32),
+    inset 0 -1px 0 rgba(0,0,0,0.36);
+  transform: translateY(-50%);
+  transition:
+    transform 360ms cubic-bezier(0.4,0,1,0.6) var(--bb-d, 0ms),
+    opacity   300ms ease                       var(--bb-d, 0ms);
+}
+.vault-door-right .vault-bolt-bar {
+  right: auto;
+  left: -14px;
+  border-radius: 8px 0 0 8px;
+  box-shadow:
+    -3px 1px 8px rgba(0,0,0,0.72),
+    inset 0  1px 0 rgba(220,180,118,0.32),
+    inset 0 -1px 0 rgba(0,0,0,0.36);
+}
+
+.vbb-t { top: 22%; --bb-d:   0ms; }
+.vbb-m { top: 50%; --bb-d: 100ms; }
+.vbb-b { top: 78%; --bb-d:  50ms; }
+
+/* Bolt retraction — bolts pull back into the panel before door swings */
+.vault-intro.is-unlocking .vault-door-left  .vault-bolt-bar {
+  transform: translateY(-50%) translateX(-26px);
+  opacity: 0;
+}
+.vault-intro.is-unlocking .vault-door-right .vault-bolt-bar {
+  transform: translateY(-50%) translateX(26px);
+  opacity: 0;
+}
+
+/* Cylindrical bolt tip end-caps — rounded brass head at the rod end */
+.vault-bolt-bar::after {
   content: "";
   position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to right,
-    rgba(0, 0, 0, 0.28) 0%,
-    transparent 22%,
-    transparent 78%,
-    rgba(0, 0, 0, 0.22) 100%
-  );
-  /* Top/bottom fade - top is darker (shadow from arch above) */
-  -webkit-mask: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent 18%, transparent 82%, rgba(0,0,0,0.5));
-  mask: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent 18%, transparent 82%, rgba(0,0,0,0.5));
+  right: -1px; top: 50%;
+  width: 15px; height: 15px;
+  border-radius: 50%;
+  transform: translateY(-50%) translateX(50%);
+  background: radial-gradient(circle at 36% 32%, #d4ba68, #7c5228 55%, #2c1002);
+  box-shadow: 2px 1px 5px rgba(0,0,0,0.70), inset 0 1px 2px rgba(220,180,100,0.30);
+}
+.vault-door-right .vault-bolt-bar::after {
+  right: auto; left: -1px;
+  transform: translateY(-50%) translateX(-50%);
 }
 
-.vault-door-left  { left: 0;  transform-origin: left center; }
-.vault-door-right { right: 0; transform-origin: right center; }
-.vault-door-left::before  { right: 0; }
-.vault-door-right::before { left: 0; transform: scaleX(-1); }
+/* ── ⑥ VAULT LOCK ARMS ───────────────────────────────────────────────────── */
+.vault-locker {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: min(72vmin, 524px);
+  height: min(72vmin, 524px);
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 700ms ease 250ms;
+}
+.vault-intro.is-ready    .vault-locker { opacity: 1; }
+.vault-intro.is-cracking .vault-locker,
+.vault-intro.is-opening  .vault-locker { opacity: 0; transition: opacity 260ms ease; }
 
-/* ── ③ DOOR MECHANICS ────────────────────────────────────────────────────── */
+.vault-lock-arm {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 44%; height: 9px;
+  border-radius: 0 5px 5px 0;
+  transform-origin: 0% 50%;
+  transform: translateY(-50%) rotate(var(--arm-angle, 0deg));
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(210,170,100,0.09) 0px 1px,
+      transparent              1px 8px
+    ),
+    linear-gradient(to bottom,
+      rgba(210,170,110,0.55) 0%,
+      rgba(152,112, 44,0.94) 26%,
+      rgba(192,156,100,0.97) 50%,
+      rgba(152,112, 44,0.88) 74%,
+      rgba( 58, 36,  6,0.82) 100%
+    );
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.68),
+    inset 0  1px 0 rgba(210,170,110,0.28),
+    inset 0 -1px 0 rgba(0,0,0,0.32);
+  transition:
+    transform 400ms cubic-bezier(0.4,0,1,0.6) var(--arm-d, 0ms),
+    opacity   340ms ease                       var(--arm-d, 0ms);
+}
+.vault-lock-arm::before {
+  content: "";
+  position: absolute;
+  right: -7px; top: 50%;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  background: radial-gradient(circle at 36% 30%, #c8a860, #6e4818 58%, #340e02);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.65), inset 0 1px 2px rgba(200,168,96,0.30);
+}
+.vault-lock-arm::after {
+  content: "";
+  position: absolute;
+  left: -5px; top: 50%;
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  background: radial-gradient(circle at 38% 32%, rgba(200,160,100,0.70), rgba(58,32,6,0.96));
+  box-shadow: 0 1px 4px rgba(0,0,0,0.52);
+}
+.vault-lock-arm-1 { --arm-angle: 0deg;   --arm-d:   0ms; }
+.vault-lock-arm-2 { --arm-angle: 45deg;  --arm-d:  80ms; }
+.vault-lock-arm-3 { --arm-angle: 90deg;  --arm-d: 160ms; }
+.vault-lock-arm-4 { --arm-angle: 135deg; --arm-d: 240ms; }
+.vault-lock-arm-5 { --arm-angle: 180deg; --arm-d: 320ms; }
+.vault-lock-arm-6 { --arm-angle: 225deg; --arm-d: 400ms; }
+.vault-lock-arm-7 { --arm-angle: 270deg; --arm-d: 480ms; }
+.vault-lock-arm-8 { --arm-angle: 315deg; --arm-d: 560ms; }
+.vault-intro.is-unlocking .vault-lock-arm {
+  transform: translateY(-50%) rotate(var(--arm-angle)) scaleX(0.001);
+  opacity: 0;
+}
 
-/* Centre seam - hairline gold crack */
-.vault-seam {
+/* ── ⑥ SEAM LIGHT ────────────────────────────────────────────────────────── */
+.vault-seam-light {
   position: absolute;
   top: 0; bottom: 0;
   left: calc(50% - 1px);
   width: 2px;
-  background: rgba(255, 230, 170, 0.08);
+  background: rgba(230,196,130,0.06);
   z-index: 8;
   pointer-events: none;
-  transition: box-shadow 400ms ease 100ms;
+  transition: box-shadow 360ms ease 80ms, background 360ms ease 80ms;
 }
-
-/* Bolts - gold studs at top & bottom of seam */
-.vault-bolt {
-  position: absolute;
-  left: calc(50% - 11px);
-  width: 22px; height: 22px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 36% 32%, #f4dc9a, #9a6e28 58%, #5c3c0e);
-  box-shadow: 0 3px 12px rgba(0,0,0,0.6), inset 0 1px 3px rgba(255,255,255,0.30);
-  z-index: 9;
-  transition: transform 360ms cubic-bezier(0.4, 0, 0.2, 1) 60ms,
-              opacity   280ms ease 60ms;
+.vault-intro.is-dialing .vault-seam-light {
+  background: rgba(240,210,130,0.18);
+  box-shadow: 0 0 8px 2px rgba(220,180,80,0.14);
 }
-.vault-bolt-top    { top: 16%; }
-.vault-bolt-bottom { bottom: 16%; }
-
-/* ── Door panel inset - recessed rectangle on the door face ──────────── */
-.door-panel-inset {
-  position: absolute;
-  /* Inset from door edges - creates the "raised frame around a recessed panel" look */
-  top: 7%; bottom: 7%; left: 9%; right: 9%;
-  border: 1.5px solid rgba(255, 255, 255, 0.032);
-  border-radius: 6px;
+.vault-intro.is-unlocking .vault-seam-light {
+  background: rgba(245,218,140,0.40);
+  box-shadow: 0 0 16px 5px rgba(220,185,80,0.26);
+  transition: background 300ms ease, box-shadow 300ms ease;
+}
+.vault-intro.is-cracking .vault-seam-light {
+  background: rgba(255,228,158,0.92);
   box-shadow:
-    inset 0  2px 18px rgba(0, 0, 0, 0.45),
-    inset 0  0   0  1px rgba(0, 0, 0, 0.25),
-          0  1px 0     rgba(255, 255, 255, 0.020);
-  pointer-events: none;
+    0 0 22px  6px rgba(240,198, 88,0.74),
+    0 0 65px 28px rgba(230,168, 54,0.34),
+    0 0 120px 60px rgba(210,140, 28,0.13);
+  transition: background 250ms ease, box-shadow 250ms ease;
 }
-
-/* ── Vault lever handle (right door) ─────────────────────────────────── */
-.vault-door-handle {
-  position: absolute;
-  /* Center-right of the right door panel, at mid-height */
-  top: 50%;
-  left: 60%;
-  transform: translate(-50%, -50%);
-  width: 14px;
-  height: min(94px, 10vh);
-  background: linear-gradient(
-    to right,
-    rgba( 48, 26,  4, 0.97) 0%,
-    rgba(148, 104, 22, 0.90) 24%,
-    rgba(215, 176, 84, 0.96) 50%,
-    rgba(148, 104, 22, 0.88) 76%,
-    rgba( 48, 26,  4, 0.95) 100%
-  );
-  border-radius: 7px;
+.vault-intro.is-opening .vault-seam-light {
+  background: rgba(255,238,175,1.00);
   box-shadow:
-    0 4px 18px rgba(0, 0, 0, 0.68),
-    inset 0 1px 0 rgba(255, 220, 140, 0.30);
-  pointer-events: none;
+    0 0  50px 20px rgba(248,208,104,0.86),
+    0 0 140px 70px rgba(230,172, 54,0.42);
 }
 
-/* Mounting-plate studs at each end of the handle */
-.vault-door-handle::before,
-.vault-door-handle::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 26px; height: 11px;
-  background: linear-gradient(
-    to right,
-    rgba( 48, 26,  4, 0.94),
-    rgba(148, 104, 22, 0.88) 32%,
-    rgba(190, 152, 70, 0.92) 50%,
-    rgba(148, 104, 22, 0.86) 68%,
-    rgba( 48, 26,  4, 0.90)
-  );
-  border-radius: 5px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.58);
-}
-.vault-door-handle::before { top:    -5px; }
-.vault-door-handle::after  { bottom: -5px; }
-
-/* ── Combination dial (mounted on the left door face) ────────────────── */
-
-/*
- * The dial-wrap is a CHILD of .vault-door-left, so it moves with the door
- * when it swings open. Positioned at the centre of the left panel.
- */
-.vault-dial-wrap {
-  position: absolute;
-  top:  50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: min(230px, 38vw);
-  height: min(230px, 38vw);
-  z-index: 2;               /* sits on the door face (within door's stacking ctx) */
-  pointer-events: none;
-  transition: opacity 380ms ease 80ms, transform 380ms ease 80ms;
-}
-
-/* The rotating disc */
-.vault-dial {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  animation: dialIdle 22s linear infinite;
-}
-
-/* Outer tick-mark ring with metallic rim */
-.vault-dial::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  /* Tick marks layered over a metallic rim gradient */
-  background:
-    repeating-conic-gradient(
-      rgba(232, 201, 160, 0.62) 0deg 2deg,
-      transparent               2deg 6deg
-    ),
-    radial-gradient(
-      circle at 38% 28%,
-      rgba(255, 235, 170, 0.20) 0%,
-      rgba(92,  46,  56,  0.55) 42%,
-      rgba(20,  8,   14,  0.90) 76%
-    );
-  /* Mask reveals only the rim band */
-  -webkit-mask: radial-gradient(farthest-side at 50% 50%,
-    transparent calc(100% - 18px), black calc(100% - 18px));
-  mask: radial-gradient(farthest-side at 50% 50%,
-    transparent calc(100% - 18px), black calc(100% - 18px));
-  /* Metallic rim glow */
-  box-shadow:
-    0 0 0 1px rgba(196, 163, 90, 0.32),
-    0 0 0 2px rgba(37,  18,  22, 0.90),
-    0 0 44px rgba(196, 163, 90, 0.12);
-}
-
-/* Dark inner disc - the dial face */
-.vault-dial::after {
-  content: "";
-  position: absolute;
-  inset: 18%;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle at 36% 30%,
-    rgba(92, 46, 56, 0.38) 0%,
-    rgba(20,  8, 14, 0.96) 58%
-  );
-  border: 1px solid rgba(196, 163, 90, 0.18);
-  box-shadow:
-    inset 0 0 30px rgba(0, 0, 0, 0.86),
-    inset 0 2px  8px rgba(0, 0, 0, 0.60);
-}
-
-/* Four radiating spokes (X + × pattern) */
-.dial-spoke {
-  position: absolute;
-  top: 50%;
-  left: 14%; right: 14%;
-  height: 1.5px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(196, 163, 90, 0.28) 22%,
-    rgba(196, 163, 90, 0.28) 78%,
-    transparent
-  );
-  transform-origin: 50% 50%;
-  z-index: 1;
-}
-.dial-spoke-0 { transform: translateY(-50%) rotate(0deg);   }
-.dial-spoke-1 { transform: translateY(-50%) rotate(45deg);  }
-.dial-spoke-2 { transform: translateY(-50%) rotate(90deg);  }
-.dial-spoke-3 { transform: translateY(-50%) rotate(135deg); }
-
-/* Polished gold centre hub */
-.dial-hub {
-  position: absolute;
-  top: 50%; left: 50%;
-  width: 17%; height: 17%;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  background: radial-gradient(
-    circle at 36% 30%,
-    rgba(255, 230, 155, 0.92) 0%,
-    rgba(180, 130,  35, 0.94) 44%,
-    rgba( 70,  40,   8, 0.96) 100%
-  );
-  border: 1px solid rgba(196, 163, 90, 0.58);
-  box-shadow:
-    0 3px 12px rgba(0, 0, 0, 0.65),
-    inset 0 1px  3px rgba(255, 220, 150, 0.42);
-  z-index: 3;
-}
-
-/* Handle arm - T-shaped, the key identifier of a combination dial */
-.dial-handle {
-  position: absolute;
-  top: 50%; left: 50%;
-  width: 34%; height: 8px;
-  transform-origin: 0% 50%;
-  transform: translateY(-50%) rotate(-65deg);
-  background: linear-gradient(
-    to right,
-    rgba( 70,  40,  8, 0.98) 0%,
-    rgba(165, 115, 28, 0.93) 18%,
-    rgba(222, 185, 92, 0.97) 52%,
-    rgba(165, 115, 28, 0.91) 80%
-  );
-  border-radius: 2px 4px 4px 2px;
-  box-shadow:
-    0 2px  8px rgba(0, 0, 0, 0.58),
-    inset 0 1px 0 rgba(255, 220, 140, 0.22);
-  z-index: 2;
-}
-
-/* T-grip at the far end of the handle */
-.dial-handle::after {
-  content: "";
-  position: absolute;
-  right: -1px; top: 50%;
-  width: 7px; height: 26px;
-  transform: translateY(-50%);
-  background: linear-gradient(
-    to right,
-    rgba(165, 115, 28, 0.96),
-    rgba(222, 185, 92, 0.99)
-  );
-  border-radius: 3px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.54);
-}
-
-/* Stationary indicator triangle - points down at the dial rim */
-.dial-indicator {
-  position: absolute;
-  top: 0; left: 50%;
-  transform: translateX(-50%);
-  width: 0; height: 0;
-  border-left:  7px solid transparent;
-  border-right: 7px solid transparent;
-  border-top:   15px solid rgba(196, 163, 90, 0.90);
-  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.74));
-  z-index: 10;
-}
-
-/* ── ④ WALK-THROUGH LIGHT BURST ─────────────────────────────────────────── */
+/* ── ⑦ WALK-THROUGH BURST ───────────────────────────────────────────────── */
 .vi-burst {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse 30% 30% at 50% 50%,
-    rgba(255, 235, 190, 0.95) 0%,
-    rgba(255, 200, 120, 0.50) 30%,
+  background: radial-gradient(ellipse 28% 28% at 50% 50%,
+    rgba(255,238,192,0.95) 0%,
+    rgba(255,204,124,0.52) 30%,
     transparent 70%);
   z-index: 20;
   opacity: 0;
@@ -478,300 +669,271 @@ body {
   transition: opacity 80ms ease;
 }
 
-/* ── ⑤ LOGO / TRIGGER BUTTON ─────────────────────────────────────────────── */
-.vault-intro-logo {
+/* ── ⑧ ENTRY GLOW ────────────────────────────────────────────────────────── */
+.vault-entry-glow {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 600ms ease;
+}
+.vault-intro.is-opening .vault-entry-glow {
+  opacity: 1;
+  background: radial-gradient(ellipse 52% 52% at 50% 50%,
+    rgba(252,212,132,0.50) 0%,
+    rgba(240,180, 88,0.22) 38%,
+    transparent 68%);
+}
+
+/* ── COMBINATION LOCK TICK RING ─────────────────────────────────────────── */
+/*
+ * 24 evenly-spaced tick marks via repeating-conic-gradient — the outer
+ * graduation ring of the combination dial, sits just outside the hub rim.
+ */
+.vault-hub-ticks {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: min(26vmin, 192px);
+  height: min(26vmin, 192px);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    rgba(174,134,58,0.30) 0deg 2.5deg,
+    transparent           2.5deg 15deg
+  );
+  z-index: 9;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 700ms ease 400ms;
+}
+.vault-intro.is-ready    .vault-hub-ticks { opacity: 1; }
+.vault-intro.is-dialing  .vault-hub-ticks { opacity: 0.55; transition: opacity 200ms ease; }
+.vault-intro.is-cracking .vault-hub-ticks,
+.vault-intro.is-opening  .vault-hub-ticks { opacity: 0; transition: opacity 260ms ease; }
+
+/* ── ⑨ VAULT CORE HUB (trigger) ─────────────────────────────────────────── */
+.vault-core-hub {
   position: relative;
   z-index: 10;
-  display: grid;
-  place-items: center;
-  gap: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   padding: 0;
   border: 0;
   background: transparent;
   cursor: pointer;
-  color: var(--ivory);
-  width: min(230px, 44vw);
   opacity: 0;
-  transform: scale(0.82) translateY(18px);
-  transition: opacity 600ms ease, transform 600ms ease, filter 260ms ease;
+  transform: scale(0.82) translateY(46px);
+  transition: opacity 600ms ease, transform 600ms ease, filter 240ms ease;
 }
-.vault-intro-logo img {
-  width: 100%;
-  height: auto;
-  filter: drop-shadow(0 0 40px rgba(232, 201, 160, 0.20));
-}
-.vault-intro-logo span {
-  padding: 10px 24px;
-  border: 1px solid rgba(232, 201, 160, 0.30);
-  border-radius: 999px;
-  background: rgba(37, 18, 22, 0.45);
-  backdrop-filter: blur(14px);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  animation: hintPulse 3s ease-in-out 2s infinite;
-}
-.vault-intro-logo:hover {
-  filter: brightness(1.10);
-  transform: scale(1.04) translateY(-4px);
-}
-
-/* ── STATE: is-ready ─────────────────────────────────────────────────────── */
-.vault-intro.is-ready .vault-intro-logo {
+.vault-intro.is-ready .vault-core-hub {
   opacity: 1;
-  transform: none;
+  transform: translateY(0);
+}
+.vault-core-hub:hover {
+  filter: brightness(1.06);
+  transform: scale(1.02);
+}
+.vault-core-hub:hover .vault-hub-rim {
+  animation: hubRimSpin 18s linear infinite;
 }
 
-/* ── STATE: is-dialing (phase 0 - entering the combination) ─────────────── */
-.vault-intro.is-dialing .vault-dial {
-  animation: dialFast 700ms cubic-bezier(0.22, 0.10, 0.78, 1.00) both;
-}
-
-/* Subtle hint-pulse stops while dialing */
-.vault-intro.is-dialing .vault-intro-logo span {
-  animation: none;
-  opacity: 0.55;
-}
-
-/* ── STATE: is-opening (phase 1 - door mechanics) ───────────────────────── */
-
-/* Doors swing apart */
-.vault-intro.is-opening .vault-door-left {
-  transform: perspective(1200px) rotateY(-68deg) translateX(-50%);
-}
-.vault-intro.is-opening .vault-door-right {
-  transform: perspective(1200px) rotateY(68deg) translateX(50%);
-}
-
-/* Seam blazes */
-.vault-intro.is-opening .vault-seam {
+/* Spinning antique brass rim — frames the face disc */
+.vault-hub-rim {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: min(22vmin, 162px);
+  height: min(22vmin, 162px);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 9px solid transparent;
+  background:
+    linear-gradient(rgba(20,8,12,0.55), rgba(20,8,12,0.55)) padding-box,
+    conic-gradient(
+      from 0deg,
+      #1e0a08 0deg,   #6c4222 40deg,
+      #a07840 90deg,  #6c4222 140deg,
+      #1e0a08 180deg, #6c4222 220deg,
+      #a07840 270deg, #6c4222 320deg,
+      #1e0a08 360deg
+    ) border-box;
   box-shadow:
-    0 0 60px 22px rgba(255, 220, 130, 0.45),
-    0 0 150px 70px rgba(255, 185, 70, 0.18);
+    0 0 0 1px rgba(18,7,10,0.90),
+    0 0 22px rgba(140,100,40,0.16),
+    inset 0 0 16px rgba(0,0,0,0.58);
+  animation: hubRimSpin 28s linear infinite;
+  pointer-events: none;
 }
 
-/* Seam rivets retract */
-.vault-intro.is-opening .vault-bolt-top    { transform: translateY(-70px); opacity: 0; }
-.vault-intro.is-opening .vault-bolt-bottom { transform: translateY(70px);  opacity: 0; }
-
-/* Horizontal bolt bars slide into the right door frame */
-.vault-intro.is-opening .vdb              { transform: translateX(220px); opacity: 0; }
-.vault-intro.is-opening .vdb-2            { transition-delay: 55ms; }
-.vault-intro.is-opening .vdb-3            { transition-delay: 110ms; }
-
-/* Combination dial fades and shrinks as the left door swings open */
-.vault-intro.is-opening .vault-dial-wrap {
-  opacity: 0;
-  transform: translate(-50%, -50%) scale(0.48);
+/* Static face disc with logo — centred focal point */
+.vault-hub-face {
+  position: relative;
+  width: min(18vmin, 132px);
+  height: min(18vmin, 132px);
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 36%,
+    rgba(68, 32, 40, 0.50) 0%,
+    rgba(20,  8, 12, 0.98) 52%,
+    rgba( 6,  2,  4, 1.00) 100%
+  );
+  border: 2px solid rgba(180,136,56,0.55);
+  box-shadow:
+    0 0 36px rgba(0,0,0,0.92),
+    0 0 14px rgba(148,108,40,0.14),
+    0 0 48px rgba(100, 60,20,0.10),
+    inset 0 1px 5px rgba(210,170,100,0.14);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.vault-hub-face img {
+  width: 66%;
+  height: auto;
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 0 14px rgba(220,180,120,0.42)) brightness(1.12);
 }
 
-/* Logo seal spins and shrinks away */
-.vault-intro.is-opening .vault-intro-logo {
-  animation: sealSpin 780ms cubic-bezier(0.2, 0.85, 0.24, 1) both;
+/* Inner spinning ring — sits just outside the face disc, logo stays still */
+.vault-hub-face::before {
+  content: '';
+  position: absolute;
+  inset: -9px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    rgba(168, 124, 50, 0.28) 0deg 3deg,
+    transparent 3deg 15deg
+  );
+  animation: hubFaceSpin 22s linear infinite;
+  pointer-events: none;
 }
 
-/* ── STATE: is-walking (phase 2 - rush through the vault) ───────────────── */
-.vault-intro.is-walking {
-  animation: walkThrough 850ms cubic-bezier(0.18, 0, 0.8, 1) both;
+/* "Enter VAULT" label — floats below the dial without affecting its centering */
+.vault-hub-label {
+  position: absolute;
+  top: calc(100% + 22px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  display: block;
+  padding: 6px 20px;
+  border: 1px solid rgba(148,104,38,0.30);
+  border-radius: 999px;
+  background: rgba(12,4,7,0.55);
+  backdrop-filter: blur(12px);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: rgba(182,142,88,0.72);
+  animation: hubPulse 4.5s ease-in-out 2.5s infinite;
 }
-.vault-intro.is-walking .vi-burst {
+
+/* Hub state overrides */
+.vault-intro.is-dialing   .vault-hub-rim          { animation: hubRimSpin 5s linear infinite; }
+.vault-intro.is-dialing   .vault-hub-face::before  { animation: hubFaceSpin 5s linear infinite; }
+.vault-intro.is-dialing   .vault-hub-label         { animation: none; opacity: 0.36; }
+.vault-intro.is-unlocking .vault-hub-rim           { animation: hubRimSpin 10s linear infinite; }
+.vault-intro.is-unlocking .vault-hub-face::before  { animation: hubFaceSpin 48s linear infinite; }
+.vault-intro.is-unlocking .vault-hub-label         { animation: none; opacity: 0.16; }
+.vault-intro.is-cracking  .vi-brand-plate          { opacity: 0; transition: opacity 380ms ease; }
+.vault-intro.is-cracking  .vault-hub-face::before  { animation: none; }
+.vault-intro.is-opening   .vault-core-hub          { animation: hubSpin 860ms cubic-bezier(0.2,0.85,0.24,1) both; }
+.vault-intro.is-opening   .vault-hub-face::before  { animation: none; }
+
+/* ── VAULT INNER LIGHT ───────────────────────────────────────────────────── */
+.vi-vault-light {
+  position: absolute;
+  top: 18%; left: 18%;
+  width: 64%; height: 64%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 50%,
+    rgba(238,204,140,0.38) 0%,
+    rgba(206,164, 84,0.18) 30%,
+    rgba(174,140, 70,0.07) 56%,
+    transparent 72%
+  );
+  animation: vaultLightPulse 3.5s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+.vault-intro.is-cracking .vi-vault-light {
+  opacity: 0.92;
+  transform: scale(2.6);
+  transition: opacity 300ms ease, transform 380ms ease;
+}
+.vault-intro.is-opening .vi-vault-light {
   opacity: 1;
+  transform: scale(3.4);
+  transition: opacity 700ms ease 200ms, transform 920ms ease 200ms;
 }
-/* Corridor frames rush outward (feel like passing through them) */
+
+/* ── STATES ──────────────────────────────────────────────────────────────── */
+.vault-intro.is-walking {
+  animation: walkThrough 1100ms cubic-bezier(0.20,0,0.72,1) both;
+}
+.vault-intro.is-walking .vi-burst { opacity: 1; }
 .vault-intro.is-walking .vi-frame {
-  animation: frameRush 700ms cubic-bezier(0.18, 0, 0.8, 1) both;
+  animation: frameRush 900ms cubic-bezier(0.20,0,0.72,1) both;
 }
-.vault-intro.is-walking .vi-f2 { animation-delay: 40ms; }
-.vault-intro.is-walking .vi-f3 { animation-delay: 80ms; }
-.vault-intro.is-walking .vi-f4 { animation-delay: 120ms; }
-
+.vault-intro.is-walking .vi-f2 { animation-delay:  50ms; }
+.vault-intro.is-walking .vi-f3 { animation-delay: 100ms; }
+.vault-intro.is-walking .vi-f4 { animation-delay: 150ms; }
 .vault-intro.is-walking .vi-ray {
-  animation: frameRush 600ms cubic-bezier(0.18, 0, 0.8, 1) both;
+  animation: frameRush 760ms cubic-bezier(0.20,0,0.72,1) both;
 }
 
-/* ── STATE: is-gone ──────────────────────────────────────────────────────── */
 .vault-intro.is-gone {
   opacity: 0;
   visibility: hidden;
 }
 
-/* ── Content emerges as you step into the website ───────────────────────── */
 body.vault-unlocked > :not(.vault-intro):not(.vaultmodal-overlay) {
-  animation: contentStep 780ms 750ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: contentStep 780ms 750ms cubic-bezier(0.16,1,0.3,1) both;
 }
 
 /* ── KEYFRAMES ───────────────────────────────────────────────────────────── */
 @keyframes vaultAmbient {
-  0%, 100% { opacity: 0.65; transform: scale(1); }
-  50%       { opacity: 1;    transform: scale(1.06); }
+  0%, 100% { opacity: 0.60; transform: scale(1); }
+  50%       { opacity: 1;    transform: scale(1.07); }
 }
-
-/* Dial spins slowly counter-clockwise at idle */
-@keyframes dialIdle {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(-360deg); }
+@keyframes vaultLightPulse {
+  0%, 100% { opacity: 0.46; transform: scale(0.92); }
+  50%       { opacity: 1;    transform: scale(1.22); }
 }
-
-/* Dial spins fast when entering the combination (3 counter-clockwise turns) */
-@keyframes dialFast {
-  0%   { transform: rotate(  0deg); }
-  28%  { transform: rotate(-220deg); }
-  58%  { transform: rotate(-660deg); }
-  100% { transform: rotate(-1080deg); }
+@keyframes hubRimSpin {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
 }
-
-@keyframes sealSpin {
+@keyframes hubFaceSpin {
+  to { transform: rotate(-360deg); }
+}
+@keyframes hubPulse {
+  0%, 100% { opacity: 0.58; box-shadow: 0 0 0px rgba(148,104,38,0); }
+  50%       { opacity: 0.88; box-shadow: 0 0 12px rgba(148,104,38,0.22), 0 0 3px rgba(148,104,38,0.12); }
+}
+@keyframes hubSpin {
   0%   { transform: scale(1)    rotate(0deg);  opacity: 1; }
-  38%  { transform: scale(1.14) rotate(22deg); opacity: 1; }
-  100% { transform: scale(0.5)  rotate(52deg); opacity: 0; }
+  38%  { transform: scale(1.12) rotate(20deg); opacity: 1; }
+  100% { transform: scale(0.46) rotate(50deg); opacity: 0; }
 }
-
-@keyframes hintPulse {
-  0%, 100% { opacity: 0.68; }
-  50%       { opacity: 1; }
-}
-
-/* The core "walk through" - camera rushes forward, world blurs past */
 @keyframes walkThrough {
-  0%   {
-    transform: scale(1) translateZ(0);
-    filter: brightness(1);
-  }
-  35%  {
-    transform: scale(1.6);
-    filter: brightness(1.5);
-  }
-  70%  {
-    transform: scale(3.0);
-    filter: brightness(2.5) blur(2px);
-  }
-  100% {
-    transform: scale(6.0);
-    filter: brightness(4) blur(6px);
-    opacity: 0;
-  }
+  0%   { transform: scale(1);   filter: brightness(1); }
+  28%  { transform: scale(1.5); filter: brightness(1.36); }
+  62%  { transform: scale(2.8); filter: brightness(2.2) blur(1.5px); }
+  100% { transform: scale(5.5); filter: brightness(3.8) blur(5px); opacity: 0; }
 }
-
-/* Each corridor frame rushes past the viewer */
 @keyframes frameRush {
   0%   { transform: scale(1);   opacity: 1; }
   60%  { transform: scale(2.8); opacity: 0.6; }
   100% { transform: scale(7);   opacity: 0; }
 }
-
-/* Website content: step into a brighter space */
 @keyframes contentStep {
-  from {
-    opacity: 0;
-    transform: scale(0.91) translateY(28px);
-    filter: blur(8px) brightness(1.4);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-    filter: blur(0) brightness(1);
-  }
+  from { opacity: 0; transform: scale(0.91) translateY(28px); filter: blur(8px) brightness(1.4); }
+  to   { opacity: 1; transform: scale(1) translateY(0); filter: blur(0) brightness(1); }
 }
 
-/* Respect reduced-motion preference */
-@media (prefers-reduced-motion: reduce) {
-  .vault-intro, .vault-door, .vault-intro-logo,
-  .vault-dial, .vi-frame, .vi-ray, .vi-burst, .vi-dust, .vi-vault-light {
-    animation: none !important;
-    transition: opacity 200ms ease, visibility 0ms linear 200ms !important;
-  }
-  .vault-intro.is-walking { opacity: 0; }
-  body.vault-unlocked > :not(.vault-intro):not(.vaultmodal-overlay) { animation: none !important; opacity: 1; }
-}
-
-/* ── Warm amber light from inside the vault ──────────────────────────────── */
-.vi-vault-light {
-  position: absolute;
-  top: 30%; left: 30%;
-  width: 40%; height: 40%;
-  border-radius: 50%;
-  background: radial-gradient(
-    ellipse at 50% 50%,
-    rgba(232, 201, 160, 0.24) 0%,
-    rgba(196, 163,  90, 0.10) 38%,
-    transparent 70%
-  );
-  animation: vaultLightPulse 3.4s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 0;
-}
-
-@keyframes vaultLightPulse {
-  0%, 100% { opacity: 0.52; transform: scale(0.94); }
-  50%       { opacity: 1;    transform: scale(1.20); }
-}
-
-/* Intensifies as doors swing open */
-.vault-intro.is-opening .vi-vault-light {
-  opacity: 1;
-  transform: scale(3.0);
-  transition: opacity 700ms ease 200ms, transform 900ms ease 200ms;
-}
-
-/* ── Horizontal locking bolt bars ────────────────────────────────────────── */
-.vault-door-bolts {
-  position: absolute;
-  inset: 0;
-  z-index: 7;
-  pointer-events: none;
-}
-
-/* Each bar spans the seam - gold metallic cylinder appearance */
-.vdb {
-  position: absolute;
-  left: calc(50% - 78px);
-  width: 156px;
-  height: 13px;
-  border-radius: 7px;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 238, 164, 0.58) 0%,
-    rgba(196, 163,  90, 0.94) 26%,
-    rgba(232, 201, 138, 0.97) 50%,
-    rgba(196, 163,  90, 0.88) 74%,
-    rgba( 80,  50,  10, 0.80) 100%
-  );
-  box-shadow:
-    0 2px 10px rgba(0, 0, 0, 0.70),
-    inset 0  1px 0 rgba(255, 228, 140, 0.40),
-    inset 0 -1px 0 rgba(  0,   0,   0, 0.34);
-  transition:
-    transform 390ms cubic-bezier(0.4, 0, 0.2, 1),
-    opacity   310ms ease;
-}
-
-/* End-caps: left flat (fixed in door frame), right rounded (exposed) */
-.vdb::before,
-.vdb::after {
-  content: "";
-  position: absolute;
-  top: 50%; transform: translateY(-50%);
-  width: 10px; height: 10px;
-  border-radius: 50%;
-}
-.vdb::before {
-  left: 4px;
-  background: radial-gradient(circle at 35% 30%, rgba(255,228,140,0.5), rgba(80,50,10,0.9));
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
-}
-.vdb::after {
-  right: 4px;
-  background: radial-gradient(circle at 35% 30%, rgba(255,228,140,0.7), rgba(100,65,15,0.8));
-  box-shadow: 0 1px 4px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,220,130,0.3);
-}
-
-/* Bolt positions: upper third, mid-height, lower third */
-.vdb-1 { top:    calc(32% - 7px); }
-.vdb-2 { top:    calc(50% - 7px); }
-.vdb-3 { bottom: calc(32% - 7px); }
-
-/* ── Floating dust motes ─────────────────────────────────────────────────── */
+/* ── DUST MOTES ─────────────────────────────────────────────────────────── */
 .vi-dust {
   position: absolute;
   inset: 0;
@@ -779,29 +941,45 @@ body.vault-unlocked > :not(.vault-intro):not(.vaultmodal-overlay) {
   pointer-events: none;
   z-index: 1;
 }
-
 .vi-dust i {
   position: absolute;
   width: 2px; height: 2px;
   border-radius: 50%;
-  background: rgba(232, 201, 160, 0.42);
+  background: rgba(200,162,108,0.46);
   animation: dustFloat var(--fd, 9s) var(--fd-d, 0s) ease-in-out infinite;
 }
-
-.vi-dust i:nth-child(1) { left: 18%; top: 72%; --fd: 9s;  --fd-d: 0s;    }
-.vi-dust i:nth-child(2) { left: 38%; top: 82%; --fd: 12s; --fd-d: 2.1s; width: 3px; height: 3px; }
-.vi-dust i:nth-child(3) { left: 63%; top: 66%; --fd: 8s;  --fd-d: 0.8s;  }
-.vi-dust i:nth-child(4) { left: 79%; top: 77%; --fd: 14s; --fd-d: 3.2s;  }
-.vi-dust i:nth-child(5) { left: 11%; top: 53%; --fd: 11s; --fd-d: 0.4s; width: 1.5px; height: 1.5px; }
-.vi-dust i:nth-child(6) { left: 87%; top: 61%; --fd: 13s; --fd-d: 4.5s;  }
-.vi-dust i:nth-child(7) { left: 50%; top: 88%; --fd: 10s; --fd-d: 1.6s; width: 3px; height: 3px; }
-.vi-dust i:nth-child(8) { left: 28%; top: 43%; --fd: 15s; --fd-d: 2.8s; width: 1.5px; height: 1.5px; }
+.vi-dust i:nth-child(1)  { left: 18%; top: 72%; --fd:  9s; --fd-d: 0s;   }
+.vi-dust i:nth-child(2)  { left: 38%; top: 82%; --fd: 12s; --fd-d: 2.1s; width: 3px; height: 3px; }
+.vi-dust i:nth-child(3)  { left: 63%; top: 66%; --fd:  8s; --fd-d: 0.8s; }
+.vi-dust i:nth-child(4)  { left: 79%; top: 77%; --fd: 14s; --fd-d: 3.2s; }
+.vi-dust i:nth-child(5)  { left: 11%; top: 53%; --fd: 11s; --fd-d: 0.4s; width: 1.5px; height: 1.5px; }
+.vi-dust i:nth-child(6)  { left: 87%; top: 61%; --fd: 13s; --fd-d: 4.5s; }
+.vi-dust i:nth-child(7)  { left: 50%; top: 88%; --fd: 10s; --fd-d: 1.6s; width: 3px; height: 3px; }
+.vi-dust i:nth-child(8)  { left: 28%; top: 43%; --fd: 15s; --fd-d: 2.8s; width: 1.5px; height: 1.5px; }
+.vi-dust i:nth-child(9)  { left: 45%; top: 36%; --fd: 11s; --fd-d: 1.2s; background: rgba(160,118,44,0.44); }
+.vi-dust i:nth-child(10) { left: 72%; top: 48%; --fd: 13s; --fd-d: 3.8s; width: 2.5px; height: 2.5px; }
+.vi-dust i:nth-child(11) { left: 22%; top: 62%; --fd: 16s; --fd-d: 5.2s; width: 1.5px; height: 1.5px; background: rgba(160,118,44,0.36); }
+.vi-dust i:nth-child(12) { left: 56%; top: 74%; --fd: 10s; --fd-d: 0.7s; width: 3px; height: 3px; background: rgba(200,162,108,0.52); }
 
 @keyframes dustFloat {
-  0%   { transform: translateY(  0px) translateX( 0px); opacity: 0;    }
-  14%  { opacity: 0.70; }
-  78%  { opacity: 0.22; }
-  100% { transform: translateY(-135px) translateX(24px); opacity: 0; }
+  0%   { transform: translateY(  0px) translateX( 0px); opacity: 0;   }
+  14%  { opacity: 0.62; }
+  78%  { opacity: 0.18; }
+  100% { transform: translateY(-132px) translateX(22px); opacity: 0; }
+}
+
+/* ── REDUCED MOTION ──────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .vault-intro, .vault-door-wrap, .vault-door-frame, .vault-core-hub,
+  .vault-hub-rim, .vault-hub-ticks, .vi-brand-plate,
+  .vi-frame, .vi-ray, .vi-burst, .vi-dust, .vi-vault-light,
+  .vault-locker, .vault-lock-arm, .vault-chamber-backdrop, .vault-seam-light,
+  .vault-entry-glow, .vault-bolt-bar {
+    animation: none !important;
+    transition: opacity 200ms ease !important;
+  }
+  .vault-intro.is-walking { opacity: 0; }
+  body.vault-unlocked > :not(.vault-intro):not(.vaultmodal-overlay) { animation: none !important; opacity: 1; }
 }
 
 a {
@@ -947,7 +1125,7 @@ button {
 }
 
 .button:focus-visible,
-.vault-intro-logo:focus-visible,
+.vault-core-hub:focus-visible,
 .app-nav button:focus-visible,
 .auth-tabs button:focus-visible {
   outline: 3px solid rgba(232, 201, 160, .68);
@@ -6923,4 +7101,139 @@ code,
   .goal-card {
     transition: none !important;
   }
+}
+
+/* ── Static warning banner ───────────────────────────────────────────────── */
+.static-warning {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 9000;
+  background: rgba(92, 46, 56, 0.96);
+  color: #f9ede6;
+  font-size: 13px;
+  padding: 10px 48px 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  backdrop-filter: blur(6px);
+}
+.static-warning code {
+  background: rgba(255,255,255,0.14);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: monospace;
+}
+.static-warning-close {
+  position: absolute;
+  right: 12px; top: 50%;
+  transform: translateY(-50%);
+  background: none; border: none;
+  color: #f9ede6; font-size: 16px;
+  cursor: pointer; line-height: 1;
+  padding: 4px 8px;
+  opacity: 0.7;
+}
+.static-warning-close:hover { opacity: 1; }
+
+/* ── Clickable tx rows ───────────────────────────────────────────────────── */
+.list-row-clickable {
+  cursor: pointer;
+}
+.list-row-clickable:hover {
+  background: rgba(255, 247, 241, 0.98);
+}
+
+/* ── Disputed / receipt badges ───────────────────────────────────────────── */
+.badge-dispute {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: rgba(185, 60, 60, 0.12);
+  color: #b93c3c;
+  border: 1px solid rgba(185, 60, 60, 0.28);
+  border-radius: 6px;
+  padding: 1px 6px;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+.mono {
+  font-family: monospace;
+  font-size: 0.85em;
+  letter-spacing: 0.02em;
+}
+
+/* ── Verification rows (profile) ─────────────────────────────────────────── */
+.verify-row.pending .verify-icon {
+  background: rgba(156, 98, 112, 0.12);
+  color: var(--rose-500);
+}
+.verify-row.pending {
+  opacity: 0.75;
+}
+
+/* ── Notification preference rows ────────────────────────────────────────── */
+.notif-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(219, 168, 160, 0.18);
+  cursor: pointer;
+}
+.notif-row:last-child { border-bottom: none; }
+.notif-row div { flex: 1; }
+.notif-row strong { display: block; font-size: 14px; color: var(--rose-800); }
+.notif-row small  { font-size: 12px; color: var(--rose-500); }
+.notif-check {
+  width: 18px; height: 18px;
+  accent-color: var(--rose-800);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* ── Split participant chips ─────────────────────────────────────────────── */
+.split-participants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+}
+.split-p-chip {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: rgba(46, 92, 56, 0.10);
+  color: #2e5c38;
+  border: 1px solid rgba(46, 92, 56, 0.18);
+  white-space: nowrap;
+}
+.split-p-chip.unpaid {
+  background: rgba(185, 60, 60, 0.10);
+  color: #b93c3c;
+  border-color: rgba(185, 60, 60, 0.22);
+}
+
+/* ── Admin: transaction edit rows ────────────────────────────────────────── */
+.admin-tx-row {
+  border-bottom: 1px solid rgba(219, 168, 160, 0.2);
+  padding: 10px 0;
+}
+.admin-tx-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+.admin-tx-meta strong { font-size: 14px; }
+.admin-tx-meta small  { color: var(--rose-500); font-size: 12px; }
+.admin-tx-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-end;
 }
