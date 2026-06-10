@@ -126,10 +126,41 @@ async function firestorePatch(path, data) {
   }));
 }
 
+async function firestoreDelete(path) {
+  await firestoreRequest(path, { method: "DELETE" });
+}
+
 const numberValue = (value, fallback = 0) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 };
+
+const genFirebaseId = prefix => `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+const genFirebaseTxId = () => `VLT${Math.random().toString(36).slice(2, 10).toUpperCase()}`;
+const nowIso = () => new Date().toISOString();
+
+function fallbackInvestments() {
+  return {
+    crypto: [
+      { symbol: "BTC", name: "Bitcoin", quantity: 0.018, averageBuyPrice: 98000, watchlist: true },
+      { symbol: "ETH", name: "Ethereum", quantity: 0.5, averageBuyPrice: 5200, watchlist: false }
+    ],
+    history: [
+      { id: "ih1", asset: "BTC", type: "buy", quantity: 0.005, price: 96000, date: "2026-06-01" },
+      { id: "ih2", asset: "BTC", type: "buy", quantity: 0.013, price: 98500, date: "2026-06-03" },
+      { id: "ih3", asset: "ETH", type: "buy", quantity: 0.5, price: 5200, date: "2026-06-02" }
+    ]
+  };
+}
+
+function fallbackMarketPrices() {
+  return {
+    gold: { aud: defaultSettings.goldAud },
+    silver: { aud: defaultSettings.silverAud },
+    BTC: { aud: 158000 },
+    ETH: { aud: 5600 }
+  };
+}
 
 function userFromFirestore(user) {
   return {
@@ -142,19 +173,49 @@ function userFromFirestore(user) {
     spent: numberValue(user.spent, 4000),
     saved: numberValue(user.saved, 850),
     trustScore: numberValue(user.trustScore ?? user.trutScore, 78),
+    identity: user.identity || { email: true, phone: true, aml: true },
+    linkedBanks: Array.isArray(user.linkedBanks) ? user.linkedBanks : [
+      { id: "lb1", name: "CommonBank", bsb: "062-000", last4: "4821", status: "active" }
+    ],
+    notifications: user.notifications || {
+      transfers: true,
+      budgetAlerts: true,
+      savingsUpdates: true,
+      securityAlerts: true
+    },
     createdAt: user.createdAt || new Date().toISOString()
   };
 }
 
 async function firestoreState(userId = "u1") {
-  const [userDoc, transactions, budgets, goals, cards, metalHoldings, splitBills] = await Promise.all([
-    firestoreDoc(`User/${userId}`),
-    firestoreCollection("transactions"),
-    firestoreCollection("budgets"),
-    firestoreCollection("savingsGoals"),
-    firestoreCollection("cards"),
-    firestoreCollection("metalHoldings"),
-    firestoreCollection("splitBills")
+  const safeCollection = name => firestoreCollection(name).catch(() => []);
+  const userDoc = await firestoreDoc(`User/${userId}`);
+  const [
+    transactions,
+    budgets,
+    goals,
+    cards,
+    metalHoldings,
+    splitBills,
+    recipients,
+    transferReceipts,
+    investments,
+    investmentHistory,
+    marketPriceDocs,
+    actions
+  ] = await Promise.all([
+    safeCollection("transactions"),
+    safeCollection("budgets"),
+    safeCollection("savingsGoals"),
+    safeCollection("cards"),
+    safeCollection("metalHoldings"),
+    safeCollection("splitBills"),
+    safeCollection("recipients"),
+    safeCollection("transferReceipts"),
+    safeCollection("investments"),
+    safeCollection("investmentHistory"),
+    safeCollection("marketPrices"),
+    safeCollection("actions")
   ]);
 
   const userTransactions = transactions.filter(item => !item.userId || item.userId === userId).map(item => ({
@@ -163,22 +224,28 @@ async function firestoreState(userId = "u1") {
     category: item.category || "General",
     amount: numberValue(item.amount, item.category === "Income" ? 8888 : -42.5),
     type: item.type || (numberValue(item.amount, 0) >= 0 ? "income" : "expense"),
-    date: item.date || "Today"
-  }));
+    date: item.date || "Today",
+    note: item.note || "",
+    status: item.status || "active",
+    receiptId: item.receiptId || ""
+  })).sort((a, b) => String(b.id).localeCompare(String(a.id)));
 
   const userBudgets = budgets.filter(item => !item.userId || item.userId === userId).map(item => ({
     id: item.id,
     name: item.name || "Budget",
     spent: numberValue(item.spent, 0),
     limit: numberValue(item.limit, 400),
-    icon: item.icon || "basket"
+    icon: item.icon || "basket",
+    categoryRules: Array.isArray(item.categoryRules) ? item.categoryRules : []
   }));
 
   const userGoals = goals.filter(item => !item.userId || item.userId === userId).map(item => ({
     id: item.id,
     name: item.name || "Savings goal",
     current: numberValue(item.current, 0),
-    target: numberValue(item.target, 3000)
+    target: numberValue(item.target, 3000),
+    createdAt: item.createdAt || nowIso(),
+    updatedAt: item.updatedAt || item.createdAt || nowIso()
   }));
 
   const metalsDoc = metalHoldings.find(item => !item.userId || item.userId === userId) || {};
@@ -188,8 +255,42 @@ async function firestoreState(userId = "u1") {
     name: item.name || "Split bill",
     friend: item.friend || "Friend",
     amount: numberValue(item.amount, item.name === "Beach house" ? 118 : 42.5),
-    status: item.status || "owed"
+    totalAmount: numberValue(item.totalAmount, 0),
+    splitType: item.splitType || "equal",
+    status: item.status || "owed",
+    participants: Array.isArray(item.participants) ? item.participants : [],
+    reminded: Boolean(item.reminded),
+    remindedAt: item.remindedAt || "",
+    settledAt: item.settledAt || ""
   }));
+
+  const marketPrices = marketPriceDocs.length
+    ? Object.fromEntries(marketPriceDocs.map(item => [item.symbol || item.id, { aud: numberValue(item.aud, 0) }]))
+    : fallbackMarketPrices();
+
+  const userInvestmentDocs = investments.filter(item => !item.userId || item.userId === userId);
+  const firstNestedInvest = userInvestmentDocs.find(item => Array.isArray(item.crypto));
+  const crypto = firstNestedInvest
+    ? firstNestedInvest.crypto
+    : userInvestmentDocs.map(item => ({
+        id: item.id,
+        symbol: String(item.symbol || item.id || "").replace(`${userId}_`, "").toUpperCase(),
+        name: item.name || item.symbol || item.id,
+        quantity: numberValue(item.quantity, 0),
+        averageBuyPrice: numberValue(item.averageBuyPrice, marketPrices[item.symbol || item.id]?.aud || 0),
+        watchlist: Boolean(item.watchlist)
+      })).filter(item => item.symbol);
+  const investmentFallback = fallbackInvestments();
+  const investmentHistoryRows = investmentHistory
+    .filter(item => !item.userId || item.userId === userId)
+    .map(item => ({
+      id: item.id,
+      asset: item.asset || item.symbol || "BTC",
+      type: item.type || "buy",
+      quantity: numberValue(item.quantity, 0),
+      price: numberValue(item.price, 0),
+      date: item.date || nowIso().slice(0, 10)
+    }));
 
   return {
     user: userFromFirestore(userDoc),
@@ -214,10 +315,41 @@ async function firestoreState(userId = "u1") {
       cvv: cardDoc.cvv || "482",
       dailyLimit: numberValue(cardDoc.dailyLimit, 5000),
       frozen: Boolean(cardDoc.frozen) || cardDoc.status === "Frozen",
-      status: cardDoc.status || userDoc.cardStatus || "Active"
+      status: cardDoc.status || userDoc.cardStatus || "Active",
+      replacementRequested: Boolean(cardDoc.replacementRequested),
+      replacementEta: cardDoc.replacementEta || null
     },
-    settings: defaultSettings
+    settings: {
+      ...defaultSettings,
+      goldAud: marketPrices.gold?.aud || defaultSettings.goldAud,
+      silverAud: marketPrices.silver?.aud || defaultSettings.silverAud
+    },
+    recipients: recipients
+      .filter(item => !item.userId || item.userId === userId)
+      .map(item => ({ id: item.id, name: item.name, bsb: item.bsb || null, account: item.account || null, payid: item.payid || null })),
+    transferReceipts: transferReceipts
+      .filter(item => !item.userId || item.userId === userId)
+      .sort((a, b) => String(b.at || b.id).localeCompare(String(a.at || a.id))),
+    investments: {
+      crypto: crypto.length ? crypto : investmentFallback.crypto,
+      history: investmentHistoryRows.length ? investmentHistoryRows : investmentFallback.history
+    },
+    marketPrices,
+    actions: actions
+      .filter(item => !item.userId || item.userId === userId)
+      .sort((a, b) => String(b.at || b.id).localeCompare(String(a.at || a.id)))
   };
+}
+
+async function syncFirebaseStats(userId) {
+  const next = await firestoreState(userId);
+  const spent = next.transactions
+    .filter(item => item.amount < 0 && !["Savings", "Metals", "Transfer"].includes(item.category))
+    .reduce((sum, item) => sum + Math.abs(item.amount), 0);
+  const goalTotal = (next.savings.goals || []).reduce((sum, goal) => sum + numberValue(goal.current, 0), 0);
+  const saved = Number((next.savings.flexible * 0.065 / 12 + next.savings.fixed * 0.085 / 12 + goalTotal * 0.02 / 12).toFixed(2));
+  await firestorePatch(`User/${userId}`, { spent, saved });
+  return firestoreState(userId);
 }
 
 async function firebaseApi(path, options = {}) {
@@ -232,15 +364,22 @@ async function firebaseApi(path, options = {}) {
     const users = await firestoreCollection("User");
     const user = users.find(item => String(item.email || "").toLowerCase() === String(body.email || "").toLowerCase());
     if (!user) throw new Error("No Firebase user found for that email");
+    if (user.password && String(user.password) !== String(body.password || "")) throw new Error("Email or password is incorrect");
     return firestoreState(user.id);
   }
 
   if (method === "POST" && path === "/api/signup") {
-    if (!body.name || !body.email) throw new Error("Name and email are required");
+    if (!body.name || !body.email || !body.password) throw new Error("Name, email and password are required");
+    const users = await firestoreCollection("User").catch(() => []);
+    if (users.some(item => String(item.email || "").toLowerCase() === String(body.email || "").toLowerCase())) {
+      throw new Error("This email already exists");
+    }
     const userId = `u_${Date.now()}`;
     await firestorePatch(`User/${userId}`, {
       name: body.name,
       email: String(body.email).toLowerCase(),
+      password: String(body.password),
+      avatar: String(body.name).trim().charAt(0).toUpperCase(),
       balance: 1250,
       monthlyIncome: 0,
       spent: 0,
@@ -248,13 +387,29 @@ async function firebaseApi(path, options = {}) {
       trustScore: 72,
       cardLast4: String(Math.floor(1000 + Math.random() * 8999)),
       cardStatus: "Active",
+      identity: { email: true, phone: false, aml: false },
+      linkedBanks: [],
+      notifications: { transfers: true, budgetAlerts: true, savingsUpdates: true, securityAlerts: true },
       createdAt: new Date().toISOString()
     });
-    await firestorePatch(`cards/c_${Date.now()}`, {
+    await firestorePatch(`cards/${genFirebaseId("c")}`, {
       userId,
       holder: body.name,
       last4: "8821",
+      pin: "1234",
+      cvv: String(Math.floor(100 + Math.random() * 899)),
+      dailyLimit: 2000,
+      frozen: false,
       status: "Active"
+    });
+    await firestorePatch(`metalHoldings/${genFirebaseId("m")}`, { userId, gold: 0, silver: 0, currency: "AUD" });
+    await firestorePatch(`savingsGoals/${genFirebaseId("g")}`, {
+      userId,
+      name: "Emergency fund",
+      current: 0,
+      target: 3000,
+      createdAt: nowIso(),
+      updatedAt: nowIso()
     });
     return firestoreState(userId);
   }
@@ -262,64 +417,153 @@ async function firebaseApi(path, options = {}) {
   if (method === "POST" && path === "/api/action") {
     const current = await firestoreState(body.userId);
     const userPath = `User/${current.user.id}`;
+    const userId = current.user.id;
+    const logAction = (action, detail) => firestorePatch(`actions/${genFirebaseId("a")}`, {
+      userId,
+      action,
+      detail,
+      at: nowIso()
+    }).catch(() => {});
+    const addTransaction = (title, category, amount, type = amount >= 0 ? "income" : "expense", extra = {}) =>
+      firestorePatch(`transactions/${genFirebaseId("t")}`, {
+        userId,
+        title,
+        category,
+        amount: Number(amount),
+        type,
+        date: "Just now",
+        status: "active",
+        note: "",
+        ...extra
+      });
+    const syncBudgetsForCategory = async (category, amount) => {
+      if (amount >= 0 || !category || ["Savings", "Metals", "Transfer", "Split", "Investment", "Income"].includes(category)) return;
+      const budget = current.budgets.find(item => item.name.toLowerCase() === String(category).toLowerCase());
+      if (!budget) return;
+      await firestorePatch(`budgets/${budget.id}`, { userId, spent: Number((numberValue(budget.spent, 0) + Math.abs(amount)).toFixed(2)) });
+    };
+    const findInvestment = symbol => (current.investments?.crypto || []).find(item => item.symbol === symbol);
+    const investmentDocId = symbol => {
+      const existing = findInvestment(symbol);
+      return existing?.id || `${userId}_${symbol}`;
+    };
+    const marketPrice = symbol => current.marketPrices?.[symbol]?.aud || fallbackMarketPrices()[symbol]?.aud || 0;
+    let changed = false;
 
     if (body.type === "add-transaction") {
       const amount = numberValue(body.amount, 0);
+      const category = body.category || "General";
       await firestorePatch(userPath, { balance: current.user.balance + amount });
-      await firestorePatch(`transactions/t_${Date.now()}`, {
-        userId: current.user.id,
-        title: body.title || "Manual transaction",
-        category: body.category || "General",
-        amount,
-        type: amount >= 0 ? "income" : "expense",
-        date: "Just now"
-      });
+      await addTransaction(body.title || "Manual transaction", category, amount);
+      await syncBudgetsForCategory(category, amount);
+      await logAction("transaction", `${current.user.email} added "${body.title || "transaction"}"`);
+      changed = true;
     }
 
     if (body.type === "transfer-savings") {
       const amount = numberValue(body.amount, 0);
-      const bucket = body.bucket === "fixed" ? "fixedSavings" : "flexibleSavings";
+      const isFixed = body.bucket === "fixed";
+      const bucket = isFixed ? "fixedSavings" : "flexibleSavings";
+      if (amount <= 0) throw new Error("Enter a valid amount.");
+      if (amount > current.user.balance) throw new Error(`Insufficient balance. You have ${money(current.user.balance)}.`);
       await firestorePatch(userPath, {
         balance: current.user.balance - amount,
-        [bucket]: current.savings[body.bucket === "fixed" ? "fixed" : "flexible"] + amount
+        [bucket]: current.savings[isFixed ? "fixed" : "flexible"] + amount
       });
-      await firestorePatch(`transactions/t_${Date.now()}`, {
-        userId: current.user.id,
-        title: "Savings deposit",
-        category: "Savings",
-        amount: -amount,
-        type: "transfer",
-        date: "Just now"
+      await addTransaction(`${isFixed ? "Fixed" : "Flexible"} savings deposit`, "Savings", -amount, "transfer");
+      await logAction("savings", `${current.user.email} deposited ${money(amount)} into ${isFixed ? "fixed" : "flexible"}`);
+      changed = true;
+    }
+
+    if (body.type === "withdraw-savings") {
+      const amount = numberValue(body.amount, 0);
+      const isFixed = body.bucket === "fixed";
+      const available = current.savings[isFixed ? "fixed" : "flexible"];
+      if (amount <= 0) throw new Error("Enter a valid amount.");
+      if (amount > available) throw new Error(`Only ${money(available)} available in ${isFixed ? "fixed" : "flexible"} savings.`);
+      await firestorePatch(userPath, {
+        balance: current.user.balance + amount,
+        [isFixed ? "fixedSavings" : "flexibleSavings"]: available - amount
       });
+      await addTransaction(`${isFixed ? "Fixed" : "Flexible"} savings withdrawal`, "Savings", amount, "income");
+      await logAction("savings", `${current.user.email} withdrew ${money(amount)} from ${isFixed ? "fixed" : "flexible"}`);
+      changed = true;
+    }
+
+    if (body.type === "add-goal") {
+      const name = String(body.name || "").trim();
+      const target = numberValue(body.target, 0);
+      if (!name) throw new Error("Enter a goal name.");
+      if (target <= 0) throw new Error("Enter a valid target amount.");
+      await firestorePatch(`savingsGoals/${genFirebaseId("g")}`, { userId, name, current: 0, target, createdAt: nowIso(), updatedAt: nowIso() });
+      await logAction("savings", `${current.user.email} added goal "${name}"`);
+      changed = true;
+    }
+
+    if (body.type === "edit-goal") {
+      const goal = current.savings.goals.find(item => item.id === body.goalId);
+      if (!goal) throw new Error("Goal not found.");
+      await firestorePatch(`savingsGoals/${goal.id}`, {
+        userId,
+        name: String(body.name || goal.name).trim(),
+        target: numberValue(body.target, goal.target),
+        updatedAt: nowIso()
+      });
+      await logAction("savings", `${current.user.email} edited goal "${body.name || goal.name}"`);
+      changed = true;
+    }
+
+    if (body.type === "delete-goal") {
+      const goal = current.savings.goals.find(item => item.id === body.goalId);
+      if (goal) {
+        await firestoreDelete(`savingsGoals/${goal.id}`);
+        if (goal.current > 0) {
+          await firestorePatch(userPath, { balance: current.user.balance + goal.current });
+          await addTransaction("Goal deleted - funds returned", "Savings", goal.current, "income");
+        }
+        await logAction("savings", `${current.user.email} deleted a savings goal`);
+        changed = true;
+      }
+    }
+
+    if (body.type === "contribute-goal") {
+      const goal = current.savings.goals.find(item => item.id === body.goalId);
+      const amount = numberValue(body.amount, 0);
+      if (!goal) throw new Error("Goal not found.");
+      if (amount <= 0) throw new Error("Enter a valid amount.");
+      if (amount > current.user.balance) throw new Error(`Insufficient balance. You have ${money(current.user.balance)}.`);
+      await firestorePatch(`savingsGoals/${goal.id}`, { userId, current: goal.current + amount, updatedAt: nowIso() });
+      await firestorePatch(userPath, { balance: current.user.balance - amount });
+      await addTransaction(`Saved toward "${goal.name}"`, "Savings", -amount, "transfer");
+      await logAction("savings", `${current.user.email} contributed ${money(amount)} to "${goal.name}"`);
+      changed = true;
     }
 
     if (body.type === "buy-metal") {
       const metal = body.metal === "silver" ? "silver" : "gold";
       const grams = numberValue(body.grams, 0);
+      if (grams <= 0) throw new Error("Enter a valid gram amount.");
       const spotAud = metal === "gold" ? defaultSettings.goldAud : defaultSettings.silverAud;
       const spotPerGram = spotAud / 31.1035;
       const buySpread = spotPerGram * ((defaultSettings.metalBuySpreadPct || 0.75) / 100);
       const cost = Number(((spotPerGram + buySpread) * grams + defaultSettings.metalFee).toFixed(2));
+      if (cost > current.user.balance) throw new Error(`Insufficient balance. Cost is ${money(cost)}, you have ${money(current.user.balance)}.`);
       await firestorePatch(userPath, { balance: current.user.balance - cost });
       await firestorePatch(`metalHoldings/${current.metals.id}`, {
-        userId: current.user.id,
+        userId,
         gold: metal === "gold" ? current.metals.gold + grams : current.metals.gold,
         silver: metal === "silver" ? current.metals.silver + grams : current.metals.silver,
         currency: "AUD"
       });
-      await firestorePatch(`transactions/t_${Date.now()}`, {
-        userId: current.user.id,
-        title: `Bought ${grams}g ${metal}`,
-        category: "Metals",
-        amount: -cost,
-        type: "expense",
-        date: "Just now"
-      });
+      await addTransaction(`Bought ${grams}g ${metal}`, "Metals", -cost, "expense");
+      await logAction("metals", `${current.user.email} bought ${grams}g ${metal} for ${money(cost)}`);
+      changed = true;
     }
 
     if (body.type === "sell-metal") {
       const metal = body.metal === "silver" ? "silver" : "gold";
       const grams = numberValue(body.grams, 0);
+      if (grams <= 0) throw new Error("Enter a valid gram amount.");
       const spotAud = metal === "gold" ? defaultSettings.goldAud : defaultSettings.silverAud;
       const spotPerGram = spotAud / 31.1035;
       const sellSpread = spotPerGram * ((defaultSettings.metalSellSpreadPct || 0.5) / 100);
@@ -330,67 +574,142 @@ async function firebaseApi(path, options = {}) {
       if (proceeds <= 0) throw new Error("Amount too small after fee deduction.");
       await firestorePatch(userPath, { balance: current.user.balance + proceeds });
       await firestorePatch(`metalHoldings/${current.metals.id}`, {
-        userId: current.user.id,
+        userId,
         gold: metal === "gold" ? current.metals.gold - grams : current.metals.gold,
         silver: metal === "silver" ? current.metals.silver - grams : current.metals.silver,
         currency: "AUD"
       });
-      await firestorePatch(`transactions/t_${Date.now()}`, {
-        userId: current.user.id,
-        title: `Sold ${grams}g ${metal}`,
-        category: "Metals",
-        amount: proceeds,
-        type: "income",
-        date: "Just now"
-      });
+      await addTransaction(`Sold ${grams}g ${metal}`, "Metals", proceeds, "income");
+      await logAction("metals", `${current.user.email} sold ${grams}g ${metal}, received ${money(proceeds)}`);
+      changed = true;
     }
 
     if (body.type === "create-split") {
+      const name = String(body.name || "").trim();
+      const totalAmount = numberValue(body.totalAmount, 0);
       const friends = String(body.friends || "").split(",").map(f => f.trim()).filter(Boolean);
-      await firestorePatch(`splitBills/s_${Date.now()}`, {
-        userId: current.user.id,
-        name: body.name || "Split",
-        amount: numberValue(body.share, 0),
-        totalAmount: numberValue(body.totalAmount, 0),
+      if (!name) throw new Error("Split name is required.");
+      if (totalAmount <= 0) throw new Error("Enter a valid total amount.");
+      if (!friends.length) throw new Error("Add at least one friend.");
+      const splitType = body.splitType || "equal";
+      const myShare = numberValue(body.share, 0);
+      const allPeople = [current.user.name.split(" ")[0] || "You", ...friends];
+      const participants = splitType === "equal"
+        ? allPeople.map((person, index) => ({ name: person, share: Number((totalAmount / allPeople.length).toFixed(2)), paid: index === 0 }))
+        : allPeople.map((person, index) => ({
+            name: person,
+            share: index === 0 ? myShare : Number(((totalAmount - myShare) / friends.length).toFixed(2)),
+            paid: index === 0
+          }));
+      await firestorePatch(`splitBills/${genFirebaseId("s")}`, {
+        userId,
+        name,
+        amount: myShare,
+        totalAmount,
         friend: friends.join(", ") || "Friend",
-        splitType: body.splitType || "equal",
+        splitType,
         status: body.paidByMe ? "owed" : "owe",
-        date: new Date().toISOString()
+        participants,
+        date: nowIso()
       });
+      await logAction("split", `${current.user.email} created split "${name}"`);
+      changed = true;
     }
 
     if (body.type === "split-remind") {
-      /* Mark reminded - no balance change, just status update */
       const split = current.splits.find(item => item.id === body.splitId);
       if (split) {
         await firestorePatch(`splitBills/${split.id}`, {
-          userId: current.user.id,
+          userId,
           status: split.status,
-          reminded: true
+          reminded: true,
+          remindedAt: nowIso()
         });
+        await logAction("split", `${current.user.email} sent reminder for "${split.name}"`);
+        changed = true;
       }
     }
 
     if (body.type === "transfer-send") {
       const amount = numberValue(body.amount, 0);
+      const recipientName = String(body.recipientName || "").trim();
       if (amount <= 0) throw new Error("Amount must be greater than zero.");
+      if (!recipientName) throw new Error("Recipient name is required.");
       if (amount > current.user.balance) throw new Error(`Insufficient balance. You have ${money(current.user.balance)}.`);
+      const dailyLimit = current.card?.dailyLimit || 5000;
+      const todayTransfers = current.transactions
+        .filter(item => item.category === "Transfer" && (item.date === "Today" || item.date === "Just now"))
+        .reduce((sum, item) => sum + Math.abs(item.amount), 0);
+      if (todayTransfers + amount > dailyLimit) throw new Error(`Amount exceeds your remaining daily limit of ${money(Math.max(0, dailyLimit - todayTransfers))}.`);
+      const receiptId = genFirebaseTxId();
       await firestorePatch(userPath, { balance: current.user.balance - amount });
-      await firestorePatch(`transactions/t_${Date.now()}`, {
-        userId: current.user.id,
-        title: `Transfer to ${body.recipientName || "recipient"}`,
-        category: "Transfer",
-        amount: -amount,
-        type: "expense",
-        date: "Just now"
+      await firestorePatch(`transferReceipts/${receiptId}`, {
+        userId,
+        recipientName,
+        amount,
+        reference: body.reference || "",
+        bsb: body.bsb || null,
+        account: body.account || null,
+        payid: body.payid || null,
+        at: nowIso()
       });
+      await addTransaction(`Transfer to ${recipientName}`, "Transfer", -amount, "expense", { receiptId });
+      if (body.save) {
+        const exists = current.recipients.some(item => item.name === recipientName);
+        if (!exists) {
+          await firestorePatch(`recipients/${genFirebaseId("r")}`, {
+            userId,
+            name: recipientName,
+            bsb: body.bsb || null,
+            account: body.account || null,
+            payid: body.payid || null
+          });
+        }
+      }
+      await logAction("transfer", `${current.user.email} sent ${money(amount)} to ${recipientName}`);
+      changed = true;
     }
 
     if (body.type === "split-settle") {
       const split = current.splits.find(item => item.id === body.splitId);
       if (split && split.status === "owe") {
+        if (split.amount > current.user.balance) throw new Error(`Insufficient balance to settle ${money(split.amount)}.`);
         await firestorePatch(userPath, { balance: current.user.balance - split.amount });
-        await firestorePatch(`splitBills/${split.id}`, { userId: current.user.id, status: "settled" });
+        await firestorePatch(`splitBills/${split.id}`, { userId, status: "settled", settledAt: nowIso() });
+        await addTransaction(`Settled: ${split.name}`, "Split", -split.amount, "expense");
+        await logAction("split", `${current.user.email} settled "${split.name}"`);
+        changed = true;
+      }
+    }
+
+    if (body.type === "add-budget") {
+      const name = String(body.name || "").trim();
+      const limit = numberValue(body.limit, 0);
+      if (!name) throw new Error("Enter a budget name.");
+      if (limit <= 0) throw new Error("Enter a valid limit amount.");
+      await firestorePatch(`budgets/${genFirebaseId("b")}`, { userId, name, spent: 0, limit, icon: body.icon || "tag" });
+      await logAction("budget", `${current.user.email} added budget "${name}"`);
+      changed = true;
+    }
+
+    if (body.type === "edit-budget") {
+      const budget = current.budgets.find(item => item.id === body.budgetId);
+      if (!budget) throw new Error("Budget not found.");
+      await firestorePatch(`budgets/${budget.id}`, {
+        userId,
+        name: String(body.name || budget.name).trim(),
+        limit: numberValue(body.limit, budget.limit)
+      });
+      await logAction("budget", `${current.user.email} edited budget "${body.name || budget.name}"`);
+      changed = true;
+    }
+
+    if (body.type === "delete-budget") {
+      const budget = current.budgets.find(item => item.id === body.budgetId);
+      if (budget) {
+        await firestoreDelete(`budgets/${budget.id}`);
+        await logAction("budget", `${current.user.email} deleted budget "${budget.name}"`);
+        changed = true;
       }
     }
 
@@ -398,16 +717,197 @@ async function firebaseApi(path, options = {}) {
       const nextFrozen = !current.card.frozen;
       const nextStatus = nextFrozen ? "Frozen" : "Active";
       await firestorePatch(`cards/${current.card.id}`, {
-        userId: current.user.id,
+        userId,
         holder: current.card.holder,
         last4: current.card.last4,
+        pin: current.card.pin,
+        cvv: current.card.cvv,
+        dailyLimit: current.card.dailyLimit,
         frozen: nextFrozen,
         status: nextStatus
       });
       await firestorePatch(userPath, { cardStatus: nextStatus });
+      await logAction("card", `${current.user.email} ${nextFrozen ? "froze" : "unfroze"} card`);
+      changed = true;
     }
 
-    return firestoreState(current.user.id);
+    if (body.type === "edit-card-limit") {
+      const limit = numberValue(body.limit, 0);
+      if (limit <= 0 || limit > 50000) throw new Error("Limit must be between $1 and $50,000.");
+      await firestorePatch(`cards/${current.card.id}`, { userId, dailyLimit: limit });
+      await logAction("card", `${current.user.email} set daily limit to ${money(limit)}`);
+      changed = true;
+    }
+
+    if (body.type === "change-pin") {
+      const currentPin = String(body.currentPin || "");
+      const newPin = String(body.newPin || "");
+      if (currentPin !== String(current.card.pin)) throw new Error("Current PIN is incorrect.");
+      if (!/^\d{4}$/.test(newPin)) throw new Error("New PIN must be exactly 4 digits.");
+      await firestorePatch(`cards/${current.card.id}`, { userId, pin: newPin });
+      await logAction("card", `${current.user.email} changed their PIN`);
+      changed = true;
+    }
+
+    if (body.type === "edit-transaction") {
+      const tx = current.transactions.find(item => item.id === body.txId);
+      if (!tx) throw new Error("Transaction not found.");
+      await firestorePatch(`transactions/${tx.id}`, {
+        userId,
+        note: body.note !== undefined ? String(body.note) : tx.note,
+        category: body.category ? String(body.category).trim() : tx.category
+      });
+      await logAction("transaction", `${current.user.email} edited "${tx.title}"`);
+      changed = true;
+    }
+
+    if (body.type === "dispute-transaction") {
+      const tx = current.transactions.find(item => item.id === body.txId);
+      if (!tx) throw new Error("Transaction not found.");
+      const status = tx.status === "disputed" ? "active" : "disputed";
+      await firestorePatch(`transactions/${tx.id}`, { userId, status });
+      await logAction("transaction", `${current.user.email} ${status === "disputed" ? "disputed" : "cleared dispute on"} "${tx.title}"`);
+      changed = true;
+    }
+
+    if (body.type === "request-card-replacement") {
+      const eta = new Date();
+      eta.setDate(eta.getDate() + 5);
+      await firestorePatch(`cards/${current.card.id}`, {
+        userId,
+        replacementRequested: true,
+        replacementRequestedAt: nowIso(),
+        replacementEta: eta.toISOString().slice(0, 10)
+      });
+      await logAction("card", `${current.user.email} requested a card replacement`);
+      changed = true;
+    }
+
+    if (body.type === "edit-notifications") {
+      const notifications = { ...(current.user.notifications || {}) };
+      ["transfers", "budgetAlerts", "savingsUpdates", "securityAlerts"].forEach(key => {
+        if (body[key] !== undefined) notifications[key] = Boolean(body[key]);
+      });
+      await firestorePatch(userPath, { notifications });
+      await logAction("profile", `${current.user.email} updated notification preferences`);
+      changed = true;
+    }
+
+    if (body.type === "edit-profile") {
+      const updates = {};
+      if (body.name) {
+        updates.name = String(body.name).trim();
+        updates.avatar = updates.name.charAt(0).toUpperCase();
+      }
+      if (body.email) updates.email = String(body.email).toLowerCase().trim();
+      await firestorePatch(userPath, updates);
+      if (updates.name) await firestorePatch(`cards/${current.card.id}`, { userId, holder: updates.name });
+      await logAction("profile", `${updates.email || current.user.email} updated their profile`);
+      changed = true;
+    }
+
+    if (body.type === "delete-recipient") {
+      const recipient = current.recipients.find(item => item.name === body.recipientName);
+      if (recipient?.id) {
+        await firestoreDelete(`recipients/${recipient.id}`);
+        changed = true;
+      }
+    }
+
+    if (body.type === "buy-investment") {
+      const symbol = String(body.symbol || "").toUpperCase();
+      const name = String(body.name || symbol);
+      const audAmount = numberValue(body.audAmount, 0);
+      const currentPrice = marketPrice(symbol);
+      if (!symbol) throw new Error("Asset symbol is required.");
+      if (audAmount <= 0) throw new Error("Enter a valid AUD amount.");
+      if (!currentPrice) throw new Error("Price data unavailable for that asset.");
+      if (audAmount > current.user.balance) throw new Error(`Insufficient balance. You have ${money(current.user.balance)}.`);
+      const quantity = Number((audAmount / currentPrice).toFixed(8));
+      const existing = findInvestment(symbol);
+      let nextQuantity = quantity;
+      let averageBuyPrice = currentPrice;
+      if (existing) {
+        nextQuantity = Number((existing.quantity + quantity).toFixed(8));
+        averageBuyPrice = ((existing.averageBuyPrice * existing.quantity) + (currentPrice * quantity)) / nextQuantity;
+      }
+      await firestorePatch(`investments/${investmentDocId(symbol)}`, {
+        userId,
+        symbol,
+        name,
+        quantity: nextQuantity,
+        averageBuyPrice,
+        watchlist: Boolean(existing?.watchlist)
+      });
+      await firestorePatch(`investmentHistory/${genFirebaseId("ih")}`, { userId, asset: symbol, type: "buy", quantity, price: currentPrice, date: nowIso().slice(0, 10) });
+      await firestorePatch(userPath, { balance: Number((current.user.balance - audAmount).toFixed(2)) });
+      await addTransaction(`Bought ${quantity.toFixed(6)} ${symbol}`, "Investment", -audAmount, "expense");
+      await logAction("invest", `${current.user.email} bought ${quantity.toFixed(6)} ${symbol} for ${money(audAmount)}`);
+      changed = true;
+    }
+
+    if (body.type === "sell-investment") {
+      const symbol = String(body.symbol || "").toUpperCase();
+      const quantity = numberValue(body.quantity, 0);
+      const currentPrice = marketPrice(symbol);
+      const existing = findInvestment(symbol);
+      if (!existing) throw new Error(`You do not hold any ${symbol}.`);
+      if (quantity <= 0) throw new Error("Enter a valid quantity.");
+      if (quantity > existing.quantity) throw new Error(`You only hold ${existing.quantity.toFixed(6)} ${symbol}.`);
+      if (!currentPrice) throw new Error("Price data unavailable.");
+      const proceeds = Number((quantity * currentPrice).toFixed(2));
+      const nextQuantity = Number((existing.quantity - quantity).toFixed(8));
+      if (nextQuantity < 0.000001 && !existing.watchlist) {
+        await firestoreDelete(`investments/${investmentDocId(symbol)}`);
+      } else {
+        await firestorePatch(`investments/${investmentDocId(symbol)}`, { userId, symbol, name: existing.name, quantity: nextQuantity, averageBuyPrice: existing.averageBuyPrice, watchlist: Boolean(existing.watchlist) });
+      }
+      await firestorePatch(`investmentHistory/${genFirebaseId("ih")}`, { userId, asset: symbol, type: "sell", quantity, price: currentPrice, date: nowIso().slice(0, 10) });
+      await firestorePatch(userPath, { balance: Number((current.user.balance + proceeds).toFixed(2)) });
+      await addTransaction(`Sold ${quantity.toFixed(6)} ${symbol}`, "Investment", proceeds, "income");
+      await logAction("invest", `${current.user.email} sold ${quantity.toFixed(6)} ${symbol} for ${money(proceeds)}`);
+      changed = true;
+    }
+
+    if (body.type === "add-watchlist") {
+      const symbol = String(body.symbol || "").toUpperCase();
+      const name = String(body.name || symbol);
+      const existing = findInvestment(symbol);
+      await firestorePatch(`investments/${investmentDocId(symbol)}`, {
+        userId,
+        symbol,
+        name,
+        quantity: existing?.quantity || 0,
+        averageBuyPrice: existing?.averageBuyPrice || marketPrice(symbol),
+        watchlist: true
+      });
+      await logAction("invest", `${current.user.email} added ${symbol} to watchlist`);
+      changed = true;
+    }
+
+    if (body.type === "remove-watchlist") {
+      const symbol = String(body.symbol || "").toUpperCase();
+      const existing = findInvestment(symbol);
+      if (existing) {
+        if (existing.quantity < 0.000001) await firestoreDelete(`investments/${investmentDocId(symbol)}`);
+        else await firestorePatch(`investments/${investmentDocId(symbol)}`, { userId, watchlist: false });
+        await logAction("invest", `${current.user.email} removed ${symbol} from watchlist`);
+        changed = true;
+      }
+    }
+
+    if (body.type === "refresh-market-prices") {
+      const prices = current.marketPrices || fallbackMarketPrices();
+      await Promise.all(Object.entries(prices).map(([symbol, data]) => {
+        const movement = 1 + (Math.random() - 0.5) * 0.01;
+        return firestorePatch(`marketPrices/${symbol}`, { symbol, aud: Number((numberValue(data.aud, 0) * movement).toFixed(2)) });
+      }));
+      await logAction("invest", `${current.user.email} refreshed market prices`);
+      changed = true;
+    }
+
+    if (!changed) throw new Error(`Firebase action not implemented: ${body.type}`);
+    return syncFirebaseStats(userId);
   }
 
   throw new Error("Firebase route not implemented");
@@ -419,7 +919,9 @@ async function api(path, options = {}) {
       return await firebaseApi(path, options);
     } catch (firebaseError) {
       console.warn("Firebase unavailable, using local demo API:", firebaseError.message);
-      if (location.port === "5500") throw firebaseError;
+      const deployedStaticSite = !LOCAL_HOSTS.has(location.hostname);
+      const localStaticPreview = location.protocol === "file:" || STATIC_PREVIEW_PORTS.has(location.port);
+      if (deployedStaticSite || localStaticPreview) throw firebaseError;
     }
   }
 
@@ -1499,9 +2001,15 @@ function startLivePriceTick() {
 function renderSecurityLog() {
   const el = $("#securityLog");
   if (!el || !state) return;
-  /* Only available when running on local server */
   if (USE_FIREBASE) {
-    el.innerHTML = `<div class="empty-state">Security log available in local server mode.</div>`;
+    const actions = (state.actions || []).slice(0, 10);
+    el.innerHTML = actions.length === 0
+      ? `<div class="empty-state">No security events recorded yet.</div>`
+      : actions.map(a => `
+          <div class="list-row">
+            <span><b>${a.action}</b><br><small>${a.detail}</small></span>
+            <small>${a.at ? new Date(a.at).toLocaleString("en-AU") : "Just now"}</small>
+          </div>`).join('');
     return;
   }
   fetch("/api/db").then(r => r.json()).then(db => {
@@ -2353,7 +2861,7 @@ function bindEvents() {
 }
 
 bindEvents();
-if (USE_FIREBASE) $('#staticWarning')?.classList.remove('hidden');
+if (location.protocol === "file:" || STATIC_PREVIEW_PORTS.has(location.port)) $('#staticWarning')?.classList.remove('hidden');
 if (location.hash) {
   const tab = location.hash.replace("#", "");
   if ($(`#tab-${tab}`)) setActiveTab(tab);
