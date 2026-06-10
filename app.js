@@ -162,6 +162,76 @@ function fallbackMarketPrices() {
   };
 }
 
+async function seedFirebaseDemoAccount() {
+  const userId = "u1";
+  const createdAt = "2026-05-20T00:00:00.000Z";
+  await firestorePatch(`User/${userId}`, {
+    id: userId,
+    name: "Sarah Chen",
+    email: "sarah@vault.au",
+    password: "vault123",
+    avatar: "S",
+    balance: 16032.05,
+    monthlyIncome: 8686,
+    spent: 4000,
+    saved: 850,
+    trustScore: 78,
+    cardLast4: "8821",
+    cardStatus: "Active",
+    createdAt,
+    identity: { email: true, phone: true, aml: true },
+    linkedBanks: [{ id: "lb1", name: "CommonBank", bsb: "062-000", last4: "4821", status: "active" }],
+    notifications: { transfers: true, budgetAlerts: true, savingsUpdates: true, securityAlerts: true }
+  });
+  await Promise.all([
+    firestorePatch("budgets/b1", { userId, name: "Groceries", spent: 87.54, limit: 400, icon: "basket" }),
+    firestorePatch("budgets/b2", { userId, name: "Dining", spent: 234, limit: 320, icon: "fork" }),
+    firestorePatch("budgets/b3", { userId, name: "Transport", spent: 0, limit: 260, icon: "train" }),
+    firestorePatch("budgets/b4", { userId, name: "Shopping", spent: 0, limit: 500, icon: "bag" }),
+    firestorePatch("budgets/b5", { userId, name: "Subscriptions", spent: 0, limit: 120, icon: "repeat" }),
+    firestorePatch("savingsGoals/g1", { userId, name: "Emergency fund", current: 2440, target: 5000, createdAt, updatedAt: createdAt }),
+    firestorePatch("savingsGoals/g2", { userId, name: "Japan trip", current: 1780, target: 4200, createdAt, updatedAt: createdAt }),
+    firestorePatch("savingsGoals/g3", { userId, name: "New laptop", current: 620, target: 2100, createdAt, updatedAt: createdAt }),
+    firestorePatch("metalHoldings/m1", { userId, gold: 12.42, silver: 38, currency: "AUD" }),
+    firestorePatch("cards/c1", { userId, holder: "Sarah Chen", last4: "8821", pin: "4821", cvv: "482", dailyLimit: 5000, frozen: false, status: "Active", replacementRequested: false, replacementEta: null }),
+    firestorePatch("transactions/t1", { userId, title: "Salary March", category: "Income", amount: 8888, type: "income", date: "Today", note: "", status: "active" }),
+    firestorePatch("transactions/t2", { userId, title: "Woolworths", category: "Groceries", amount: -87.54, type: "expense", date: "Today", note: "", status: "active" }),
+    firestorePatch("transactions/t3", { userId, title: "BBQ", category: "Dining", amount: -234, type: "expense", date: "Today", note: "", status: "active" }),
+    firestorePatch("transactions/t4", { userId, title: "Auto-save", category: "Savings", amount: -50, type: "transfer", date: "Yesterday", note: "", status: "active" }),
+    firestorePatch("splitBills/s1", {
+      userId,
+      name: "Dinner at Kumo",
+      friend: "Mia",
+      amount: 42.5,
+      totalAmount: 85,
+      splitType: "equal",
+      status: "owed",
+      participants: [{ name: "Sarah Chen", share: 42.5, paid: true }, { name: "Mia", share: 42.5, paid: false }]
+    }),
+    firestorePatch("splitBills/s2", {
+      userId,
+      name: "Beach house",
+      friend: "Noah, Alex",
+      amount: 118,
+      totalAmount: 354,
+      splitType: "equal",
+      status: "settled",
+      participants: [{ name: "Sarah Chen", share: 118, paid: true }, { name: "Noah", share: 118, paid: true }, { name: "Alex", share: 118, paid: true }]
+    }),
+    firestorePatch("investments/u1_BTC", { userId, symbol: "BTC", name: "Bitcoin", quantity: 0.018, averageBuyPrice: 98000, watchlist: true }),
+    firestorePatch("investments/u1_ETH", { userId, symbol: "ETH", name: "Ethereum", quantity: 0.5, averageBuyPrice: 5200, watchlist: false }),
+    firestorePatch("investmentHistory/ih1", { userId, asset: "BTC", type: "buy", quantity: 0.005, price: 96000, date: "2026-06-01" }),
+    firestorePatch("investmentHistory/ih2", { userId, asset: "BTC", type: "buy", quantity: 0.013, price: 98500, date: "2026-06-03" }),
+    firestorePatch("investmentHistory/ih3", { userId, asset: "ETH", type: "buy", quantity: 0.5, price: 5200, date: "2026-06-02" }),
+    firestorePatch("marketPrices/gold", { symbol: "gold", aud: defaultSettings.goldAud }),
+    firestorePatch("marketPrices/silver", { symbol: "silver", aud: defaultSettings.silverAud }),
+    firestorePatch("marketPrices/BTC", { symbol: "BTC", aud: 158000 }),
+    firestorePatch("marketPrices/ETH", { symbol: "ETH", aud: 5600 }),
+    firestorePatch(`actions/${genFirebaseId("a")}`, { userId, action: "seed", detail: "Netlify demo account created", at: nowIso() })
+  ]);
+  return firestoreState(userId);
+}
+
 function userFromFirestore(user) {
   return {
     id: user.id,
@@ -363,6 +433,11 @@ async function firebaseApi(path, options = {}) {
   if (method === "POST" && path === "/api/login") {
     const users = await firestoreCollection("User");
     const user = users.find(item => String(item.email || "").toLowerCase() === String(body.email || "").toLowerCase());
+    const email = String(body.email || "").toLowerCase();
+    const password = String(body.password || "");
+    if (!user && email === "sarah@vault.au" && password === "vault123") {
+      return seedFirebaseDemoAccount();
+    }
     if (!user) throw new Error("No Firebase user found for that email");
     if (user.password && String(user.password) !== String(body.password || "")) throw new Error("Email or password is incorrect");
     return firestoreState(user.id);
