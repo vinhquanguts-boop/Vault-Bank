@@ -1644,6 +1644,7 @@ p {
   position: absolute;
   width: min(620px, 100%);
   border-radius: 28px;
+  background: transparent;
   transition: transform 320ms ease, filter 320ms ease, opacity 320ms ease;
 }
 
@@ -2630,6 +2631,7 @@ select:hover {
   height: 100%;
   object-fit: contain;
   backface-visibility: hidden;
+  background: transparent;
   filter: drop-shadow(0 30px 60px rgba(61, 28, 36, 0.26));
 }
 
@@ -5152,10 +5154,17 @@ code,
 }
 
 /* ── CARD modal preview ── */
+.mp-card-screen {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
 .mp-card-img {
   width: 100%;
   max-width: 280px;
   border-radius: 16px;
+  background: transparent;
   filter: drop-shadow(0 16px 32px rgba(0, 0, 0, 0.48));
 }
 

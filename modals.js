@@ -232,7 +232,7 @@
         'Works everywhere Visa is accepted - over 200 countries',
       ],
       preview: () => `
-        <div class="mp-screen dark center">
+        <div class="mp-screen dark center mp-card-screen">
           <img src="assets/vault_card_front.png" alt="Vault card" class="mp-card-img" />
           <div class="mp-card-data">
             <div class="mp-card-row"><span>Status</span><span class="mp-card-badge active">Active</span></div>
