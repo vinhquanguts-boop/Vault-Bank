@@ -316,6 +316,12 @@
   },
   "actions": [
     {
+      "id": "a_f221f172d1",
+      "action": "login",
+      "detail": "sarah@vault.au signed in",
+      "at": "2026-06-12T06:14:38.799Z"
+    },
+    {
       "id": "a_15832175ca",
       "action": "login",
       "detail": "sarah@vault.au signed in",
